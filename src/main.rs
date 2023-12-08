@@ -141,15 +141,19 @@ fn days_to_run(force_all: bool) -> Vec<i32> {
 
 #[derive(clap::Parser, Debug)]
 struct Args {
-    #[arg(long = "force-all")]
+    /// Runs all solutions, even if they have been solved already
+    #[arg(short, long = "force-all")]
     force_all: bool,
 
-    #[arg(long, default_value = "1")]
+    /// Number of times to run all solutions. Used for benchmarking
+    #[arg(short, default_value = "1")]
     n: u32,
 
-    #[arg(long)]
+    /// Validates the solutions agains the answers in the /answers directory
+    #[arg(short, long)]
     validate: bool,
 
+    /// Prints solutions to stdout
     #[arg(long = "show-solutions")]
     show_solutions: bool,
 }

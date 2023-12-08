@@ -19,6 +19,45 @@ Some self-imposed constraints, because I participate to learn, not to compete.
     even input parsing errors
   - Might be a bit verbose at times, let's see...
 
+## Usage
+
+By default, only unsolved problems are run.
+
+To detect whether a problem has been solved,
+the program checks for a file in the `/answers` directory.
+
+By default, solutions are _not_ printed out.
+
+`--validate` is used to test against regressions.
+
+```bash
+Usage: aoc2023 [OPTIONS]
+
+Options:
+  -f, --force-all       Runs all solutions, even if they have been solved already
+  -n <N>                Number of times to run all solutions. Used for benchmarking [default: 1]
+  -v, --validate        Validates the solutions agains the answers in the /answers directory
+      --show-solutions  Prints solutions to stdout
+  -h, --help            Print help
+
+```
+
+### Scripts
+
+```bash
+# Runs all solutions and validates them.
+# Useful for taking performance snapshots.
+./run-all.sh
+
+# Runs all unsolved solutions and watches the `/src` directory
+# Useful during problem solving.
+./watch.sh
+
+# Runs all solutions and takes a profile for samply.
+# Requires samply to be installed: https://github.com/mstange/samply
+./samply.sh
+```
+
 ## Latest Problem Runtimes
 
 ```log
