@@ -1,100 +1,73 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    let map = parse_input(input)?;
+    let mut map = parse_input(input)?;
+    let tile_loop = find_loop(&mut map);
+    Ok((tile_loop.len() / 2).to_string())
+}
 
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    let mut map = parse_input(input)?;
+    let tile_loop = find_loop(&mut map);
+    let vertices = tile_loop.iter().filter(|tile| match &tile.kind {
+        TileKind::Ground => false,
+        TileKind::Start => true,
+        TileKind::Pipe(kind) => !matches!(kind, PipeKind::Vertical | PipeKind::Horizontal),
+    });
+
+    Ok("not implemented".to_string())
+}
+
+fn find_loop(map: &mut PipeMap) -> Vec<Tile> {
+    let mut vertices = Vec::with_capacity(8096);
     let (mut x, mut y) = map.start;
+
     loop {
-        (x, y) = follow_pipe(&map, (x, y))?;
+        let current_tile = &mut map.tiles[y][x];
+        current_tile.visited = true;
+        vertices.push(current_tile.clone());
 
-        if (x, y) == map.start {
-            break;
+        match find_unvisited_neighbor(map, (x, y)) {
+            Some(next_tile) => {
+                (x, y) = next_tile.pos;
+            }
+            None => break,
         }
     }
 
-    Ok("not implemented".to_string())
+    vertices
 }
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
-}
-
-fn follow_pipe(map: &PipeMap, (x, y): (usize, usize)) -> anyhow::Result<(usize, usize)> {
-    match map.tiles[y][x].kind {
-        TileKind::Ground => anyhow::bail!("Cannot follow ground tile"),
-        TileKind::Start => {
-            let n = connected_neighbours(map, (x, y));
-            log::warn!("neighbors: {:?}", n);
-        }
-        TileKind::Pipe(_) => {}
-    }
-    Ok((x, y))
-}
-
-fn connected_neighbours(map: &PipeMap, (x, y): (usize, usize)) -> Vec<(usize, usize)> {
-    let mut neighbors = Vec::with_capacity(4);
+fn find_unvisited_neighbor(map: &PipeMap, (x, y): (usize, usize)) -> Option<&Tile> {
+    let current = &map.tiles[y][x];
 
     if y > 0 {
         let top = &map.tiles[y - 1][x];
-        match top.kind {
-            TileKind::Start
-            | TileKind::Pipe(PipeKind::Vertical)
-            | TileKind::Pipe(PipeKind::SouthWest)
-            | TileKind::Pipe(PipeKind::SouthEast) => {
-                neighbors.push((x, y - 1));
-            }
-            _ => {}
+        if !top.visited && top.connects_bottom() && current.connects_top() {
+            return Some(top);
         }
     }
 
     if y < map.tiles.len() - 1 {
         let bottom = &map.tiles[y + 1][x];
-        match bottom.kind {
-            TileKind::Start
-            | TileKind::Pipe(PipeKind::Vertical)
-            | TileKind::Pipe(PipeKind::NorthWest)
-            | TileKind::Pipe(PipeKind::NorthEast) => {
-                neighbors.push((x, y + 1));
-            }
-            _ => {}
+        if !bottom.visited && bottom.connects_top() && current.connects_bottom() {
+            return Some(bottom);
         }
     }
 
     if x > 0 {
         let left = &map.tiles[y][x - 1];
-        match left.kind {
-            TileKind::Start
-            | TileKind::Pipe(PipeKind::Horizontal)
-            | TileKind::Pipe(PipeKind::NorthEast)
-            | TileKind::Pipe(PipeKind::SouthEast) => {
-                neighbors.push((x - 1, y));
-            }
-            _ => {}
+        if !left.visited && left.connects_right() && current.connects_left() {
+            return Some(left);
         }
     }
 
     if x < map.tiles[0].len() - 1 {
         let right = &map.tiles[y][x + 1];
-        match right.kind {
-            TileKind::Start
-            | TileKind::Pipe(PipeKind::Horizontal)
-            | TileKind::Pipe(PipeKind::NorthWest)
-            | TileKind::Pipe(PipeKind::SouthWest) => {
-                neighbors.push((x + 1, y));
-            }
-            _ => {}
+        if !right.visited && right.connects_left() && current.connects_right() {
+            return Some(right);
         }
     }
 
-    neighbors
-}
-
-struct PipeMap {
-    tiles: Vec<Vec<Tile>>,
-    start: (usize, usize),
-}
-
-struct Tile {
-    kind: TileKind,
-    visited: bool,
+    None
 }
 
 fn parse_input(input: &str) -> anyhow::Result<PipeMap> {
@@ -122,6 +95,7 @@ fn parse_input(input: &str) -> anyhow::Result<PipeMap> {
                         _ => anyhow::bail!("Failed to parse tile: {}", c),
                     };
                     Ok(Tile {
+                        pos: (x, y),
                         kind,
                         visited: false,
                     })
@@ -136,14 +110,68 @@ fn parse_input(input: &str) -> anyhow::Result<PipeMap> {
     })
 }
 
-#[derive(Debug, PartialEq)]
+struct PipeMap {
+    tiles: Vec<Vec<Tile>>,
+    start: (usize, usize),
+}
+
+#[derive(Clone)]
+struct Tile {
+    pos: (usize, usize),
+    kind: TileKind,
+    visited: bool,
+}
+
+impl Tile {
+    fn connects_top(&self) -> bool {
+        matches!(
+            self.kind,
+            TileKind::Start
+                | TileKind::Pipe(PipeKind::Vertical)
+                | TileKind::Pipe(PipeKind::NorthEast)
+                | TileKind::Pipe(PipeKind::NorthWest)
+        )
+    }
+
+    fn connects_bottom(&self) -> bool {
+        matches!(
+            self.kind,
+            TileKind::Start
+                | TileKind::Pipe(PipeKind::Vertical)
+                | TileKind::Pipe(PipeKind::SouthWest)
+                | TileKind::Pipe(PipeKind::SouthEast)
+        )
+    }
+
+    fn connects_left(&self) -> bool {
+        matches!(
+            self.kind,
+            TileKind::Start
+                | TileKind::Pipe(PipeKind::Horizontal)
+                | TileKind::Pipe(PipeKind::NorthWest)
+                | TileKind::Pipe(PipeKind::SouthWest)
+        )
+    }
+
+    fn connects_right(&self) -> bool {
+        matches!(
+            self.kind,
+            TileKind::Start
+                | TileKind::Pipe(PipeKind::Horizontal)
+                | TileKind::Pipe(PipeKind::NorthEast)
+                | TileKind::Pipe(PipeKind::SouthEast)
+        )
+    }
+}
+
+#[derive(Clone, PartialEq)]
 enum TileKind {
     Ground,
     Start,
     Pipe(PipeKind),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 enum PipeKind {
     Vertical,
     Horizontal,
