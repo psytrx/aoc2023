@@ -7,36 +7,33 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let mut map = parse_input(input)?;
     find_loop(&mut map);
-
-    let inside = map
+    Ok(map
         .tiles
         .iter()
         .flatten()
-        .filter(|&tile| !tile.visited && inside_loop(&map, tile))
-        .count();
-
-    Ok(inside.to_string())
+        .filter(|&tile| inside_loop(&map, tile))
+        .count()
+        .to_string())
 }
 
 fn inside_loop(map: &PipeMap, tile: &Tile) -> bool {
-    // Helps us choose the shorter range to the border
-    let x_range = if tile.pos.0 < 70 {
-        0..tile.pos.0
+    if tile.visited {
+        false
     } else {
-        tile.pos.0 + 1..140
-    };
+        // Helps us choose the side closer to the border
+        let x_range = if tile.pos.0 < 70 {
+            0..tile.pos.0
+        } else {
+            tile.pos.0 + 1..140
+        };
 
-    let intersections = map.tiles[tile.pos.1][x_range]
-        .iter()
-        .filter(|tile| {
-            tile.visited
-                && (tile.kind == TileKind::Pipe(PipeKind::Vertical)
-                    || tile.kind == TileKind::Pipe(PipeKind::NorthEast)
-                    || tile.kind == TileKind::Pipe(PipeKind::NorthWest))
-        })
-        .count();
+        let intersections = map.tiles[tile.pos.1][x_range]
+            .iter()
+            .filter(|tile| tile.visited && "|LJ".contains(tile.kind))
+            .count();
 
-    intersections % 2 == 1
+        intersections % 2 == 1
+    }
 }
 
 fn find_loop(map: &mut PipeMap) -> Vec<Tile> {
@@ -44,11 +41,11 @@ fn find_loop(map: &mut PipeMap) -> Vec<Tile> {
     let (mut x, mut y) = map.start;
 
     loop {
-        let current_tile = &mut map.tiles[y][x];
-        current_tile.visited = true;
-        vertices.push(current_tile.clone());
+        let current = &mut map.tiles[y][x];
+        current.visited = true;
+        vertices.push(current.clone());
 
-        match find_unvisited_neighbor(map, (x, y)) {
+        match unvisited_neighbor(map, (x, y)) {
             Some(next_tile) => {
                 (x, y) = next_tile.pos;
             }
@@ -59,33 +56,33 @@ fn find_loop(map: &mut PipeMap) -> Vec<Tile> {
     vertices
 }
 
-fn find_unvisited_neighbor(map: &PipeMap, (x, y): (usize, usize)) -> Option<&Tile> {
+fn unvisited_neighbor(map: &PipeMap, (x, y): (usize, usize)) -> Option<&Tile> {
     let current = &map.tiles[y][x];
 
-    if y > 0 {
+    if y > 0 && current.connects_top() {
         let top = &map.tiles[y - 1][x];
-        if !top.visited && top.connects_bottom() && current.connects_top() {
+        if !top.visited && top.connects_bottom() {
             return Some(top);
         }
     }
 
-    if x < map.tiles[0].len() - 1 {
+    if x < map.tiles[0].len() - 1 && current.connects_right() {
         let right = &map.tiles[y][x + 1];
-        if !right.visited && right.connects_left() && current.connects_right() {
+        if !right.visited && right.connects_left() {
             return Some(right);
         }
     }
 
-    if y < map.tiles.len() - 1 {
+    if y < map.tiles.len() - 1 && current.connects_bottom() {
         let bottom = &map.tiles[y + 1][x];
-        if !bottom.visited && bottom.connects_top() && current.connects_bottom() {
+        if !bottom.visited && bottom.connects_top() {
             return Some(bottom);
         }
     }
 
-    if x > 0 {
+    if x > 0 && current.connects_left() {
         let left = &map.tiles[y][x - 1];
-        if !left.visited && left.connects_right() && current.connects_left() {
+        if !left.visited && left.connects_right() {
             return Some(left);
         }
     }
@@ -103,29 +100,18 @@ fn parse_input(input: &str) -> anyhow::Result<PipeMap> {
             line.chars()
                 .enumerate()
                 .map(|(x, c)| {
-                    let kind = match c {
-                        '.' => TileKind::Ground,
-                        'S' => {
-                            start = Some((x, y));
-                            TileKind::Start
-                        }
-                        '|' => TileKind::Pipe(PipeKind::Vertical),
-                        '-' => TileKind::Pipe(PipeKind::Horizontal),
-                        'L' => TileKind::Pipe(PipeKind::NorthEast),
-                        'J' => TileKind::Pipe(PipeKind::NorthWest),
-                        '7' => TileKind::Pipe(PipeKind::SouthWest),
-                        'F' => TileKind::Pipe(PipeKind::SouthEast),
-                        _ => anyhow::bail!("Failed to parse tile: {}", c),
-                    };
-                    Ok(Tile {
+                    if c == 'S' {
+                        start = Some((x, y));
+                    }
+                    Tile {
                         pos: (x, y),
-                        kind,
+                        kind: c,
                         visited: false,
-                    })
+                    }
                 })
-                .collect::<anyhow::Result<_>>()
+                .collect::<Vec<_>>()
         })
-        .collect::<anyhow::Result<_>>()?;
+        .collect::<Vec<_>>();
 
     Ok(PipeMap {
         tiles: map,
@@ -138,68 +124,27 @@ struct PipeMap {
     start: (usize, usize),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone)]
 struct Tile {
     pos: (usize, usize),
-    kind: TileKind,
+    kind: char,
     visited: bool,
 }
 
 impl Tile {
     fn connects_top(&self) -> bool {
-        matches!(
-            self.kind,
-            TileKind::Start
-                | TileKind::Pipe(PipeKind::Vertical)
-                | TileKind::Pipe(PipeKind::NorthEast)
-                | TileKind::Pipe(PipeKind::NorthWest)
-        )
+        "|LJS".contains(self.kind)
     }
 
     fn connects_bottom(&self) -> bool {
-        matches!(
-            self.kind,
-            TileKind::Start
-                | TileKind::Pipe(PipeKind::Vertical)
-                | TileKind::Pipe(PipeKind::SouthWest)
-                | TileKind::Pipe(PipeKind::SouthEast)
-        )
+        "|F7S".contains(self.kind)
     }
 
     fn connects_left(&self) -> bool {
-        matches!(
-            self.kind,
-            TileKind::Start
-                | TileKind::Pipe(PipeKind::Horizontal)
-                | TileKind::Pipe(PipeKind::NorthWest)
-                | TileKind::Pipe(PipeKind::SouthWest)
-        )
+        "-J7S".contains(self.kind)
     }
 
     fn connects_right(&self) -> bool {
-        matches!(
-            self.kind,
-            TileKind::Start
-                | TileKind::Pipe(PipeKind::Horizontal)
-                | TileKind::Pipe(PipeKind::NorthEast)
-                | TileKind::Pipe(PipeKind::SouthEast)
-        )
+        "-LFS".contains(self.kind)
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum TileKind {
-    Ground,
-    Start,
-    Pipe(PipeKind),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum PipeKind {
-    Vertical,
-    Horizontal,
-    NorthEast,
-    NorthWest,
-    SouthWest,
-    SouthEast,
 }
