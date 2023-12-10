@@ -48,7 +48,7 @@ fn history(seq: Vec<i32>) -> anyhow::Result<Vec<Vec<i32>>> {
                 .map(|window| match window {
                     &[a, b] => {
                         let diff = b - a;
-                        if diff < 0 && !contains_non_zeros {
+                        if diff != 0 && !contains_non_zeros {
                             contains_non_zeros = true;
                         }
                         Ok(diff)
