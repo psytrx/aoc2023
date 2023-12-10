@@ -6,14 +6,37 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let mut map = parse_input(input)?;
-    let tile_loop = find_loop(&mut map);
-    let vertices = tile_loop.iter().filter(|tile| match &tile.kind {
-        TileKind::Ground => false,
-        TileKind::Start => true,
-        TileKind::Pipe(kind) => !matches!(kind, PipeKind::Vertical | PipeKind::Horizontal),
-    });
+    find_loop(&mut map);
 
-    Ok("not implemented".to_string())
+    let inside = map
+        .tiles
+        .iter()
+        .flatten()
+        .filter(|&tile| !tile.visited && inside_loop(&map, tile))
+        .count();
+
+    Ok(inside.to_string())
+}
+
+fn inside_loop(map: &PipeMap, tile: &Tile) -> bool {
+    // Helps us choose the shorter range to the border
+    let x_range = if tile.pos.0 < 70 {
+        0..tile.pos.0
+    } else {
+        tile.pos.0 + 1..140
+    };
+
+    let intersections = map.tiles[tile.pos.1][x_range]
+        .iter()
+        .filter(|tile| {
+            tile.visited
+                && (tile.kind == TileKind::Pipe(PipeKind::Vertical)
+                    || tile.kind == TileKind::Pipe(PipeKind::NorthEast)
+                    || tile.kind == TileKind::Pipe(PipeKind::NorthWest))
+        })
+        .count();
+
+    intersections % 2 == 1
 }
 
 fn find_loop(map: &mut PipeMap) -> Vec<Tile> {
@@ -46,6 +69,13 @@ fn find_unvisited_neighbor(map: &PipeMap, (x, y): (usize, usize)) -> Option<&Til
         }
     }
 
+    if x < map.tiles[0].len() - 1 {
+        let right = &map.tiles[y][x + 1];
+        if !right.visited && right.connects_left() && current.connects_right() {
+            return Some(right);
+        }
+    }
+
     if y < map.tiles.len() - 1 {
         let bottom = &map.tiles[y + 1][x];
         if !bottom.visited && bottom.connects_top() && current.connects_bottom() {
@@ -57,13 +87,6 @@ fn find_unvisited_neighbor(map: &PipeMap, (x, y): (usize, usize)) -> Option<&Til
         let left = &map.tiles[y][x - 1];
         if !left.visited && left.connects_right() && current.connects_left() {
             return Some(left);
-        }
-    }
-
-    if x < map.tiles[0].len() - 1 {
-        let right = &map.tiles[y][x + 1];
-        if !right.visited && right.connects_left() && current.connects_right() {
-            return Some(right);
         }
     }
 
@@ -115,7 +138,7 @@ struct PipeMap {
     start: (usize, usize),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Tile {
     pos: (usize, usize),
     kind: TileKind,
@@ -164,14 +187,14 @@ impl Tile {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum TileKind {
     Ground,
     Start,
     Pipe(PipeKind),
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum PipeKind {
     Vertical,
     Horizontal,
