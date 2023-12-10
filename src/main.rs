@@ -46,6 +46,7 @@ fn load_problem_set(day: i32) -> anyhow::Result<(String, SolutionFn, SolutionFn)
         7 => (problems::day_07::part_one, problems::day_07::part_two),
         8 => (problems::day_08::part_one, problems::day_08::part_two),
         9 => (problems::day_09::part_one, problems::day_09::part_two),
+        10 => (problems::day_10::part_one, problems::day_10::part_two),
         _ => anyhow::bail!("No problem set mapped for day {}", day),
     };
 
@@ -146,7 +147,7 @@ struct Args {
     force_all: bool,
 
     /// Number of times to run all solutions. Used for benchmarking
-    #[arg(short, default_value = "1")]
+    #[arg(short, long, default_value = "1")]
     n: u32,
 
     /// Validates the solutions agains the answers in the /answers directory
@@ -154,6 +155,6 @@ struct Args {
     validate: bool,
 
     /// Prints solutions to stdout
-    #[arg(long = "show-solutions")]
+    #[arg(short, long = "show-solutions")]
     show_solutions: bool,
 }
