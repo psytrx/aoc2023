@@ -1,59 +1,49 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let map = parse_input(input)?;
-    Ok(find_exit(&map, node_id_hash("AAA"))?.to_string())
+    Ok(find_exit(&map, node_id_hash("AAA")).to_string())
 }
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let map = parse_input(input)?;
-
-    let starting_nodes = map
+    Ok(map
         .connections
         .iter()
         .enumerate()
         .filter_map(|(from, &(left, right))| {
             if left != 0 && right != 0 && (from & 0b11111) == 0 {
-                Some(from)
+                Some(find_exit(&map, from))
             } else {
                 None
             }
-        });
-
-    Ok(starting_nodes
-        .map(|node| find_exit(&map, node))
-        .collect::<anyhow::Result<Vec<i64>>>()?
-        .into_iter()
-        .reduce(|a, b| num::Integer::lcm(&a, &b))
-        .ok_or_else(|| anyhow::anyhow!("Failed to reduce to lcm"))?
+        })
+        .fold(1, |a, b| num::Integer::lcm(&a, &b))
         .to_string())
 }
 
-fn find_exit(map: &Map, mut from_node: usize) -> anyhow::Result<i64> {
+fn find_exit(map: &Map, mut from_node: usize) -> i64 {
     let mut instruction_idx = 0;
-    let trailing_hash = hash_char('Z');
-
-    while (from_node & 0b11111) != trailing_hash {
-        from_node = follow_instruction(map, from_node, instruction_idx)?;
+    while (from_node & 0b11111) != 25 {
+        from_node = follow_instruction(map, from_node, instruction_idx);
         instruction_idx += 1;
     }
-
-    Ok(instruction_idx as i64)
+    instruction_idx as i64
 }
 
-fn follow_instruction(map: &Map, current: usize, instruction_idx: usize) -> anyhow::Result<usize> {
+fn follow_instruction(map: &Map, current: usize, instruction_idx: usize) -> usize {
     let instruction = map.instructions[instruction_idx % map.instructions.len()];
 
     let (left, right) = map.connections[current];
-    match instruction {
-        'L' => Ok(left),
-        'R' => Ok(right),
-        _ => anyhow::bail!("Failed to map invalid instruction: {}", instruction),
+    if instruction == 'L' {
+        left
+    } else {
+        right
     }
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Map> {
     input.lines().try_fold(Map::new(), |mut map, line| {
-        if line.is_empty() {
-            Ok(map)
+        Ok(if line.is_empty() {
+            map
         } else if let Some((from, to_list)) = line.split_once(" = ") {
             let (left, right) = to_list
                 .strip_prefix('(')
@@ -68,11 +58,11 @@ fn parse_input(input: &str) -> anyhow::Result<Map> {
             let right = node_id_hash(right);
 
             map.connections[hash] = (left, right);
-            Ok(map)
+            map
         } else {
             map.instructions = line.chars().collect();
-            Ok(map)
-        }
+            map
+        })
     })
 }
 
@@ -93,7 +83,7 @@ struct Map {
 impl Map {
     fn new() -> Self {
         Self {
-            instructions: Vec::new(),
+            instructions: Vec::with_capacity(512),
             connections: vec![(0, 0); node_id_hash("ZZZ") + 1],
         }
     }
