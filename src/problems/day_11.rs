@@ -6,33 +6,29 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     Ok(solve(parse_input(input), 1_000_000).to_string())
 }
 
-fn solve(map: Vec<Vec<CellKind>>, expansion_factor: i64) -> i64 {
+fn solve(map: Vec<Vec<Option<(i64, i64)>>>, expansion_factor: i64) -> i64 {
     let galaxies = flat_expand(map, expansion_factor);
     galaxies
         .iter()
         .enumerate()
-        .flat_map(|(i, a)| galaxies.iter().skip(i + 1).map(move |b| (a, b)))
-        .map(|(a, b)| {
-            let (a_x, a_y) = a.pos;
-            let (b_x, b_y) = b.pos;
-            let dist = (a_x - b_x).abs() + (a_y - b_y).abs();
-            (a.id, b.id, dist)
+        .flat_map(|(i, (a_x, a_y))| {
+            galaxies
+                .iter()
+                .skip(i + 1)
+                .map(move |(b_x, b_y)| (a_x - b_x).abs() + (a_y - b_y).abs())
         })
-        .collect::<Vec<_>>()
-        .iter()
-        .map(|(_, _, d)| d)
-        .sum::<i64>()
+        .sum()
 }
 
-fn flat_expand(map: Vec<Vec<CellKind>>, expansion_factor: i64) -> Vec<Galaxy> {
+fn flat_expand(map: Vec<Vec<Option<(i64, i64)>>>, expansion_factor: i64) -> Vec<(i64, i64)> {
     let mut col_empty = [true; 140];
     let mut row_empty = [true; 140];
 
-    for (y, row) in map.iter().enumerate() {
-        for (x, cell) in row.iter().enumerate() {
-            if let CellKind::Galaxy(_) = cell {
-                col_empty[x] = false;
-                row_empty[y] = false;
+    for row in map.iter() {
+        for cell in row.iter() {
+            if let &Some((x, y)) = cell {
+                col_empty[x as usize] = false;
+                row_empty[y as usize] = false;
             }
         }
     }
@@ -43,11 +39,8 @@ fn flat_expand(map: Vec<Vec<CellKind>>, expansion_factor: i64) -> Vec<Galaxy> {
     for (y, row) in map.iter().enumerate() {
         let mut x_offset = 0;
         for (x, col) in row.iter().enumerate() {
-            if let CellKind::Galaxy(g) = col {
-                galaxies.push(Galaxy {
-                    pos: (x as i64 + x_offset, y as i64 + y_offset),
-                    ..*g
-                });
+            if let Some((x, y)) = col {
+                galaxies.push((x + x_offset, y + y_offset));
             }
 
             if col_empty[x] {
@@ -63,7 +56,7 @@ fn flat_expand(map: Vec<Vec<CellKind>>, expansion_factor: i64) -> Vec<Galaxy> {
     galaxies
 }
 
-fn parse_input(input: &str) -> Vec<Vec<CellKind>> {
+fn parse_input(input: &str) -> Vec<Vec<Option<(i64, i64)>>> {
     let mut id = 0;
     input
         .lines()
@@ -74,27 +67,12 @@ fn parse_input(input: &str) -> Vec<Vec<CellKind>> {
                 .map(|(x, cell)| {
                     if cell == '#' {
                         id += 1;
-                        CellKind::Galaxy(Galaxy {
-                            id,
-                            pos: (x as i64, y as i64),
-                        })
+                        Some((x as i64, y as i64))
                     } else {
-                        CellKind::Empty
+                        None
                     }
                 })
                 .collect()
         })
         .collect()
-}
-
-#[derive(Debug)]
-enum CellKind {
-    Empty,
-    Galaxy(Galaxy),
-}
-
-#[derive(Debug)]
-struct Galaxy {
-    id: i64,
-    pos: (i64, i64),
 }
