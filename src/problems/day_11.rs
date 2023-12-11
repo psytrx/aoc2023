@@ -1,31 +1,30 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    let map = parse_input(input);
-    let galaxies = flat_expand(map);
+    Ok(solve(parse_input(input), 2).to_string())
+}
 
-    let galaxy_pairs = galaxies
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    Ok(solve(parse_input(input), 1_000_000).to_string())
+}
+
+fn solve(map: Vec<Vec<CellKind>>, expansion_factor: i64) -> i64 {
+    let galaxies = flat_expand(map, expansion_factor);
+    galaxies
         .iter()
         .enumerate()
-        .flat_map(|(i, a)| galaxies.iter().skip(i + 1).map(move |b| (a, b)));
-
-    let distances = galaxy_pairs
+        .flat_map(|(i, a)| galaxies.iter().skip(i + 1).map(move |b| (a, b)))
         .map(|(a, b)| {
             let (a_x, a_y) = a.pos;
             let (b_x, b_y) = b.pos;
             let dist = (a_x - b_x).abs() + (a_y - b_y).abs();
             (a.id, b.id, dist)
         })
-        .collect::<Vec<_>>();
-
-    let sum = distances.iter().map(|(_, _, d)| d).sum::<i32>();
-
-    Ok(sum.to_string())
+        .collect::<Vec<_>>()
+        .iter()
+        .map(|(_, _, d)| d)
+        .sum::<i64>()
 }
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
-}
-
-fn flat_expand(map: Vec<Vec<CellKind>>) -> Vec<Galaxy> {
+fn flat_expand(map: Vec<Vec<CellKind>>, expansion_factor: i64) -> Vec<Galaxy> {
     let mut col_empty = [true; 140];
     let mut row_empty = [true; 140];
 
@@ -46,18 +45,18 @@ fn flat_expand(map: Vec<Vec<CellKind>>) -> Vec<Galaxy> {
         for (x, col) in row.iter().enumerate() {
             if let CellKind::Galaxy(g) = col {
                 galaxies.push(Galaxy {
-                    pos: (x as i32 + x_offset, y as i32 + y_offset),
+                    pos: (x as i64 + x_offset, y as i64 + y_offset),
                     ..*g
                 });
             }
 
             if col_empty[x] {
-                x_offset += 1;
+                x_offset += expansion_factor - 1;
             }
         }
 
         if row_empty[y] {
-            y_offset += 1
+            y_offset += expansion_factor - 1;
         }
     }
 
@@ -77,7 +76,7 @@ fn parse_input(input: &str) -> Vec<Vec<CellKind>> {
                         id += 1;
                         CellKind::Galaxy(Galaxy {
                             id,
-                            pos: (x as i32, y as i32),
+                            pos: (x as i64, y as i64),
                         })
                     } else {
                         CellKind::Empty
@@ -96,6 +95,6 @@ enum CellKind {
 
 #[derive(Debug)]
 struct Galaxy {
-    id: i32,
-    pos: (i32, i32),
+    id: i64,
+    pos: (i64, i64),
 }
