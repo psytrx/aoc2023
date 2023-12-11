@@ -1,9 +1,24 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let map = parse_input(input);
-    let map = flat_expand(map);
-    log::trace!("{:?}", map);
+    let galaxies = flat_expand(map);
 
-    Ok("not implemented".to_string())
+    let galaxy_pairs = galaxies
+        .iter()
+        .enumerate()
+        .flat_map(|(i, a)| galaxies.iter().skip(i + 1).map(move |b| (a, b)));
+
+    let distances = galaxy_pairs
+        .map(|(a, b)| {
+            let (a_x, a_y) = a.pos;
+            let (b_x, b_y) = b.pos;
+            let dist = (a_x - b_x).abs() + (a_y - b_y).abs();
+            (a.id, b.id, dist)
+        })
+        .collect::<Vec<_>>();
+
+    let sum = distances.iter().map(|(_, _, d)| d).sum::<i32>();
+
+    Ok(sum.to_string())
 }
 
 pub fn part_two(_input: &str) -> anyhow::Result<String> {
@@ -19,7 +34,6 @@ fn flat_expand(map: Vec<Vec<CellKind>>) -> Vec<Galaxy> {
             if let CellKind::Galaxy(_) = cell {
                 col_empty[x] = false;
                 row_empty[y] = false;
-                break;
             }
         }
     }
