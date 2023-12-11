@@ -7,33 +7,22 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let mut map = parse_input(input)?;
     find_loop(&mut map);
-    Ok(map
-        .tiles
-        .iter()
-        .flatten()
-        .filter(|&tile| inside_loop(&map, tile))
-        .count()
-        .to_string())
-}
 
-fn inside_loop(map: &PipeMap, tile: &Tile) -> bool {
-    if tile.visited {
-        false
-    } else {
-        // Helps us choose the side closer to the border
-        let x_range = if tile.pos.0 < 70 {
-            0..tile.pos.0
-        } else {
-            tile.pos.0 + 1..140
-        };
-
-        let intersections = map.tiles[tile.pos.1][x_range]
-            .iter()
-            .filter(|tile| tile.visited && "|LJ".contains(tile.kind))
-            .count();
-
-        intersections % 2 == 1
+    let mut inside = 0;
+    for row in map.tiles.iter_mut() {
+        let mut count = 0;
+        for tile in row.iter_mut() {
+            if tile.visited {
+                if "|LJ".contains(tile.kind) {
+                    count += 1;
+                }
+            } else if count % 2 == 1 {
+                inside += 1;
+            }
+        }
     }
+
+    Ok(inside.to_string())
 }
 
 fn find_loop(map: &mut PipeMap) -> Vec<Tile> {
