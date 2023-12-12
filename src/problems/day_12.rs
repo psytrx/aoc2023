@@ -1,69 +1,58 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    let records = parse_input(input)?;
-    log::trace!("records: {:#?}", records);
-
-    let temp = records.iter().map(arrangements).collect::<Vec<_>>();
-    log::trace!("temp: {:#?}", temp);
-
-    Ok("not implemented".to_string())
-}
-
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
-}
-
-fn arrangements(r: &Record) -> i32 {
-    let mut combinations: Vec<String> = vec!["".to_string()];
-
-    for c in r.pattern.chars() {
-        if c == '?' {
-            combinations = combinations
-                .iter()
-                .flat_map(|acc| {
-                    let mut a = acc.clone();
-                    a.push('.');
-
-                    let mut b = acc.clone();
-                    b.push('#');
-
-                    vec![a, b]
-                })
-                .collect();
-        } else {
-            combinations = combinations
-                .iter_mut()
-                .map(|acc| {
-                    acc.push(c);
-                    acc.to_string()
-                })
-                .collect();
-        }
-    }
-
-    combinations
+    Ok(parse_input(input)?
         .iter()
-        .filter(|c| count_groups(c) == r.group_counts)
-        .count() as i32
+        .map(|r| {
+            let chars = r.pattern.chars().collect::<Vec<_>>();
+            arrangements(&chars, &r.groups, 0)
+        })
+        .sum::<i32>()
+        .to_string())
 }
 
-fn count_groups(pattern: &str) -> Vec<i32> {
-    let mut groups = Vec::with_capacity(8);
-    let mut current = 0;
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    Ok("".to_string())
+}
 
-    for c in pattern.chars() {
-        if c == '#' {
-            current += 1;
-        } else if current > 0 {
-            groups.push(current);
-            current = 0;
+fn arrangements(pattern: &[char], groups: &[i32], group_size: i32) -> i32 {
+    match (pattern, groups) {
+        ([], []) => {
+            if group_size == 0 {
+                1
+            } else {
+                0
+            }
         }
-    }
+        ([], [expected, rest_groups @ ..]) => {
+            if &group_size == expected {
+                arrangements(pattern, rest_groups, 0)
+            } else {
+                0
+            }
+        }
+        (['.', rest_pat @ ..], []) => {
+            if group_size == 0 {
+                arrangements(rest_pat, groups, 0)
+            } else {
+                0
+            }
+        }
+        (['.', rest_pat @ ..], [expected, rest_groups @ ..]) => {
+            if group_size == 0 {
+                arrangements(rest_pat, groups, 0)
+            } else if &group_size == expected {
+                arrangements(rest_pat, rest_groups, 0)
+            } else {
+                0
+            }
+        }
+        (['?', rest_pat @ ..], _) => {
+            arrangements(&[&['.'], rest_pat].concat(), groups, group_size)
+                + arrangements(&[&['#'], rest_pat].concat(), groups, group_size)
+        }
+        (['#', rest_pat @ ..], _) => arrangements(rest_pat, groups, group_size + 1),
 
-    if current > 0 {
-        groups.push(current);
+        _ => unreachable!("unreachable pattern: {:?}, groups: {:?}", pattern, groups),
     }
-
-    groups
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Vec<Record>> {
@@ -88,22 +77,12 @@ fn parse_line(line: &str) -> anyhow::Result<Record> {
 
     Ok(Record {
         pattern: pattern.to_string(),
-        group_counts,
+        groups: group_counts,
     })
 }
 
 #[derive(Debug)]
 struct Record {
     pattern: String,
-    group_counts: Vec<i32>,
-}
-
-#[test]
-fn test_count_groups() {
-    assert_eq!(count_groups("#.#.###"), vec![1, 1, 3]);
-    assert_eq!(count_groups(".#...#....###."), vec![1, 1, 3]);
-    assert_eq!(count_groups(".#.###.#.######"), vec![1, 3, 1, 6]);
-    assert_eq!(count_groups("####.#...#..."), vec![4, 1, 1]);
-    assert_eq!(count_groups("#....######..#####."), vec![1, 6, 5]);
-    assert_eq!(count_groups(".###.##....#"), vec![3, 2, 1]);
+    groups: Vec<i32>,
 }
