@@ -1,34 +1,85 @@
+use memoize::memoize;
+use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let sum = parse_input(input)?
-        .iter()
-        .map(|r| arrangements(&r.pattern, &r.groups))
-        .collect::<anyhow::Result<Vec<usize>>>()?
-        .iter()
+        .into_par_iter()
+        .map(arrangements)
         .sum::<usize>();
-    assert_eq!(sum, 21);
     Ok(sum.to_string())
 }
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let sum = parse_input(input)?
-        .into_iter()
+        .into_par_iter()
         .map(|r| {
-            let chars = std::iter::repeat(r.pattern)
+            let pattern = std::iter::repeat(r.pattern)
                 .take(5)
                 .collect::<Vec<_>>()
                 .join("?");
             let groups = r.groups.repeat(5);
-            arrangements(&chars, &groups)
+            arrangements(Record { pattern, groups })
         })
-        .collect::<anyhow::Result<Vec<usize>>>()?
-        .iter()
         .sum::<usize>();
-    assert_eq!(sum, 525152);
     Ok(sum.to_string())
 }
 
-fn arrangements(pattern: &str, groups: &[usize]) -> anyhow::Result<usize> {
-    Ok(0)
+#[memoize]
+fn arrangements(rec: Record) -> usize {
+    if rec.pattern.is_empty() && rec.groups.is_empty() {
+        1
+    } else if rec.pattern.is_empty() && !rec.groups.is_empty()
+        || rec.groups.is_empty() && rec.pattern.contains('#')
+    {
+        0
+    } else if let Some(stripped) = rec.pattern.strip_prefix('.') {
+        arrangements(Record {
+            pattern: stripped.to_string(),
+            groups: rec.groups,
+        })
+    } else if rec.pattern.starts_with('#') {
+        let expected_group = rec.groups[0];
+
+        if rec.pattern.len() < expected_group {
+            0
+        } else {
+            let prefix = &rec.pattern[..expected_group];
+            if prefix.contains('.') {
+                0
+            } else if rec.pattern.len() == expected_group {
+                if rec.groups.len() == 1 {
+                    1
+                } else {
+                    0
+                }
+            } else {
+                let c = rec.pattern.as_bytes()[expected_group];
+                if c == b'.' || c == b'?' {
+                    let rec_suffix = rec.pattern[expected_group + 1..].to_string();
+                    let group_suffix = rec.groups[1..].to_vec();
+                    arrangements(Record {
+                        pattern: rec_suffix,
+                        groups: group_suffix,
+                    })
+                } else {
+                    0
+                }
+            }
+        }
+    } else if rec.pattern.starts_with('?') {
+        // branch out into both possibilities
+        let dot = Record {
+            pattern: ".".to_string() + &rec.pattern[1..],
+            groups: rec.groups.clone(),
+        };
+        let pound = Record {
+            pattern: "#".to_string() + &rec.pattern[1..],
+            groups: rec.groups.clone(),
+        };
+        arrangements(dot) + arrangements(pound)
+    } else {
+        unreachable!()
+    }
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Vec<Record>> {
@@ -57,7 +108,7 @@ fn parse_line(line: &str) -> anyhow::Result<Record> {
     })
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 struct Record {
     pattern: String,
     groups: Vec<usize>,
