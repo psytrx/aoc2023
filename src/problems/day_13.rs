@@ -1,25 +1,57 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    let input = parse_input(input)?;
-
-    let reflections = input
+    Ok(parse_input(input)?
         .iter()
-        .map(|pattern| find_horizontal_reflections(pattern))
-        .collect::<Vec<_>>();
-    log::trace!("{:#?}", reflections);
-
-    Ok("not implemented".to_string())
+        .map(|pattern| {
+            find_reflection(pattern)
+                .map(|r| match r {
+                    Reflection::Horizontal(v) => 100 * v,
+                    Reflection::Vertical(v) => v,
+                })
+                .ok_or_else(|| anyhow::anyhow!("Failed to find reflection for pattern"))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?
+        .iter()
+        .sum::<usize>()
+        .to_string())
 }
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    Ok(parse_input(input)?
+        .iter()
+        .map(|pattern| {
+            find_reflection(pattern)
+                .map(|r| {
+                    // foo
+                    1
+                })
+                .ok_or_else(|| anyhow::anyhow!("Failed to find reflection for pattern"))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?
+        .iter()
+        .sum::<usize>()
+        .to_string())
 }
 
-fn find_horizontal_reflections(pattern: &[String]) -> Vec<usize> {
-    let mut mirrors = vec![];
+fn transpose(pattern: &[String]) -> Vec<String> {
+    let mut transposed = vec![String::with_capacity(pattern.len()); pattern[0].len()];
+    for s in pattern {
+        for (i, c) in s.chars().enumerate() {
+            transposed[i].push(c);
+        }
+    }
+    transposed
+}
 
+fn find_reflection(pattern: &[String]) -> Option<Reflection> {
+    find_horizontal_reflection(pattern).or_else(|| {
+        let transposed = transpose(pattern);
+        find_horizontal_reflection(&transposed).map(|r| r.into_rotated())
+    })
+}
+
+fn find_horizontal_reflection(pattern: &[String]) -> Option<Reflection> {
     for mirror_y in 1..pattern.len() {
         let height = mirror_y.min(pattern.len() - mirror_y);
-
         let mut is_mirrored = true;
 
         for offset_y in 0..height {
@@ -34,11 +66,25 @@ fn find_horizontal_reflections(pattern: &[String]) -> Vec<usize> {
         }
 
         if is_mirrored {
-            mirrors.push(mirror_y);
+            return Some(Reflection::Horizontal(mirror_y));
         }
     }
 
-    mirrors
+    None
+}
+
+enum Reflection {
+    Horizontal(usize),
+    Vertical(usize),
+}
+
+impl Reflection {
+    fn into_rotated(self) -> Reflection {
+        match self {
+            Reflection::Horizontal(v) => Reflection::Vertical(v),
+            Reflection::Vertical(v) => Reflection::Horizontal(v),
+        }
+    }
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Vec<Vec<String>>> {
