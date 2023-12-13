@@ -1,5 +1,5 @@
 use memoize::memoize;
-use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let sum = parse_input(input)?
@@ -11,7 +11,7 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let sum = parse_input(input)?
-        .into_par_iter()
+        .into_iter()
         .map(|r| {
             let pattern = std::iter::repeat(r.pattern)
                 .take(5)
@@ -63,13 +63,15 @@ fn arrangements(rec: Record) -> usize {
         }
     } else if rec.pattern.starts_with('?') {
         // branch out into both possibilities
+        let pat_suffix = &rec.pattern[1..];
+
         let dot = {
-            let pattern = ".".to_string() + &rec.pattern[1..];
+            let pattern = ".".to_string() + pat_suffix;
             let groups = rec.groups.clone();
             arrangements(Record { pattern, groups })
         };
         let pound = {
-            let pattern = "#".to_string() + &rec.pattern[1..];
+            let pattern = "#".to_string() + pat_suffix;
             arrangements(Record { pattern, ..rec })
         };
         dot + pound
@@ -81,27 +83,25 @@ fn arrangements(rec: Record) -> usize {
 fn parse_input(input: &str) -> anyhow::Result<Vec<Record>> {
     input
         .lines()
-        .map(parse_line)
-        .collect::<anyhow::Result<Vec<Record>>>()
-}
+        .map(|line| {
+            let (pattern, group_counts) = line
+                .split_once(' ')
+                .ok_or_else(|| anyhow::anyhow!("Failed to split line"))?;
 
-fn parse_line(line: &str) -> anyhow::Result<Record> {
-    let (pattern, group_counts) = line
-        .split_once(' ')
-        .ok_or_else(|| anyhow::anyhow!("Failed to split line"))?;
+            let groups = group_counts
+                .split(',')
+                .map(|s| {
+                    s.parse::<usize>()
+                        .map_err(|e| anyhow::anyhow!("Failed to parse grou counts: {}", e))
+                })
+                .collect::<anyhow::Result<Vec<usize>>>()?;
 
-    let group_counts = group_counts
-        .split(',')
-        .map(|s| {
-            s.parse::<usize>()
-                .map_err(|e| anyhow::anyhow!("Failed to parse grou counts: {}", e))
+            Ok(Record {
+                pattern: pattern.to_string(),
+                groups,
+            })
         })
-        .collect::<anyhow::Result<Vec<usize>>>()?;
-
-    Ok(Record {
-        pattern: pattern.to_string(),
-        groups: group_counts,
-    })
+        .collect::<anyhow::Result<Vec<Record>>>()
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
