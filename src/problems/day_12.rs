@@ -11,7 +11,7 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let sum = parse_input(input)?
-        .into_par_iter()
+        .into_iter()
         .map(|r| {
             let pattern = std::iter::repeat(r.pattern)
                 .take(5)
@@ -33,10 +33,8 @@ fn arrangements(rec: Record) -> usize {
     {
         0
     } else if let Some(stripped) = rec.pattern.strip_prefix('.') {
-        arrangements(Record {
-            pattern: stripped.to_string(),
-            groups: rec.groups,
-        })
+        let pattern = stripped.to_string();
+        arrangements(Record { pattern, ..rec })
     } else if rec.pattern.starts_with('#') {
         let expected_group = rec.groups[0];
 
@@ -55,12 +53,9 @@ fn arrangements(rec: Record) -> usize {
             } else {
                 let c = rec.pattern.as_bytes()[expected_group];
                 if c == b'.' || c == b'?' {
-                    let rec_suffix = rec.pattern[expected_group + 1..].to_string();
-                    let group_suffix = rec.groups[1..].to_vec();
-                    arrangements(Record {
-                        pattern: rec_suffix,
-                        groups: group_suffix,
-                    })
+                    let pattern = rec.pattern[expected_group + 1..].to_string();
+                    let groups = rec.groups[1..].to_vec();
+                    arrangements(Record { pattern, groups })
                 } else {
                     0
                 }
@@ -68,15 +63,18 @@ fn arrangements(rec: Record) -> usize {
         }
     } else if rec.pattern.starts_with('?') {
         // branch out into both possibilities
-        let dot = Record {
-            pattern: ".".to_string() + &rec.pattern[1..],
-            groups: rec.groups.clone(),
+        let pat_suffix = &rec.pattern[1..];
+
+        let dot = {
+            let pattern = ".".to_string() + pat_suffix;
+            let groups = rec.groups.clone();
+            arrangements(Record { pattern, groups })
         };
-        let pound = Record {
-            pattern: "#".to_string() + &rec.pattern[1..],
-            groups: rec.groups.clone(),
+        let pound = {
+            let pattern = "#".to_string() + pat_suffix;
+            arrangements(Record { pattern, ..rec })
         };
-        arrangements(dot) + arrangements(pound)
+        dot + pound
     } else {
         unreachable!()
     }
