@@ -1,5 +1,5 @@
 use memoize::memoize;
-use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let sum = parse_input(input)?
