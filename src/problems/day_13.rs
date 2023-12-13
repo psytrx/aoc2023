@@ -1,8 +1,16 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    Ok(parse_input(input)?
+    Ok(solve(parse_input(input)?, 0)?.to_string())
+}
+
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    Ok(solve(parse_input(input)?, 1)?.to_string())
+}
+
+fn solve(patterns: Vec<Vec<String>>, required_differences: usize) -> anyhow::Result<usize> {
+    Ok(patterns
         .iter()
         .map(|pattern| {
-            find_reflection(pattern)
+            find_reflection(pattern, required_differences)
                 .map(|r| match r {
                     Reflection::Horizontal(v) => 100 * v,
                     Reflection::Vertical(v) => v,
@@ -11,25 +19,7 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
         })
         .collect::<anyhow::Result<Vec<_>>>()?
         .iter()
-        .sum::<usize>()
-        .to_string())
-}
-
-pub fn part_two(input: &str) -> anyhow::Result<String> {
-    Ok(parse_input(input)?
-        .iter()
-        .map(|pattern| {
-            find_reflection(pattern)
-                .map(|r| {
-                    // foo
-                    1
-                })
-                .ok_or_else(|| anyhow::anyhow!("Failed to find reflection for pattern"))
-        })
-        .collect::<anyhow::Result<Vec<_>>>()?
-        .iter()
-        .sum::<usize>()
-        .to_string())
+        .sum::<usize>())
 }
 
 fn transpose(pattern: &[String]) -> Vec<String> {
@@ -42,30 +32,39 @@ fn transpose(pattern: &[String]) -> Vec<String> {
     transposed
 }
 
-fn find_reflection(pattern: &[String]) -> Option<Reflection> {
-    find_horizontal_reflection(pattern).or_else(|| {
+fn find_reflection(pattern: &[String], required_differences: usize) -> Option<Reflection> {
+    find_horizontal_reflection(pattern, required_differences).or_else(|| {
         let transposed = transpose(pattern);
-        find_horizontal_reflection(&transposed).map(|r| r.into_rotated())
+        find_horizontal_reflection(&transposed, required_differences).map(|r| r.into_rotated())
     })
 }
 
-fn find_horizontal_reflection(pattern: &[String]) -> Option<Reflection> {
+fn find_horizontal_reflection(
+    pattern: &[String],
+    required_differences: usize,
+) -> Option<Reflection> {
     for mirror_y in 1..pattern.len() {
         let height = mirror_y.min(pattern.len() - mirror_y);
-        let mut is_mirrored = true;
-
+        let mut differences = 0;
         for offset_y in 0..height {
             let a = &pattern[mirror_y + offset_y];
             let b = &pattern[mirror_y - offset_y - 1];
 
-            let equal = a.chars().zip(b.chars()).all(|(c_a, c_b)| c_a == c_b);
-            if !equal {
-                is_mirrored = false;
+            for (a, b) in a.chars().zip(b.chars()) {
+                if a != b {
+                    differences += 1;
+                    if differences > required_differences {
+                        break;
+                    }
+                }
+            }
+
+            if differences > required_differences {
                 break;
             }
         }
 
-        if is_mirrored {
+        if differences == required_differences {
             return Some(Reflection::Horizontal(mirror_y));
         }
     }
@@ -73,6 +72,7 @@ fn find_horizontal_reflection(pattern: &[String]) -> Option<Reflection> {
     None
 }
 
+#[derive(Debug)]
 enum Reflection {
     Horizontal(usize),
     Vertical(usize),
