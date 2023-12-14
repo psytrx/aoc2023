@@ -17,11 +17,12 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     let test_cycles = 1_000_000_000;
 
     for i in 0..test_cycles {
-        let slided_north = slide_dish_west(&rotate_dish_ccw(&dish));
-        let slided_west = slide_dish_west(&rotate_dish_cw(&slided_north));
-        let slided_south = slide_dish_west(&rotate_dish_cw(&slided_west));
-        let slided_east = slide_dish_west(&rotate_dish_cw(&slided_south));
-        dish = rotate_dish_cw(&rotate_dish_cw(&slided_east));
+        dish = rotate_dish_ccw(&dish);
+        for _ in 0..4 {
+            dish = slide_dish_west(&dish);
+            dish = rotate_dish_cw(&dish);
+        }
+        dish = rotate_dish_cw(&dish);
 
         if !hashes.insert(dish.clone()) {
             if cycle_start.is_none() {
