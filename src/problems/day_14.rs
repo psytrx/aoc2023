@@ -1,18 +1,12 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    let data = parse_input(input);
-    log::trace!("data: {:#?}", data);
-
-    let slided = slide_north(&data);
-    log::trace!("slided: {:#?}", slided);
-
-    let load = load(&slided);
-    log::trace!("load: {:#?}", load);
-
-    Ok("not implemented".to_string())
+    Ok(load(&rotate_dish_cw(&slide_dish_west(&rotate_dish_ccw(
+        &parse_input(input),
+    ))))
+    .to_string())
 }
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    Ok("foo".to_string())
 }
 
 fn load(dish: &[String]) -> usize {
@@ -26,10 +20,8 @@ fn load(dish: &[String]) -> usize {
         .sum::<usize>()
 }
 
-fn slide_north(dish: &[String]) -> Vec<String> {
-    rotate_dish_cw(&slide_dish_west(&rotate_dish_cw(&rotate_dish_cw(
-        &rotate_dish_cw(dish),
-    ))))
+fn rotate_dish_ccw(dish: &[String]) -> Vec<String> {
+    rotate_dish_cw(&rotate_dish_cw(&rotate_dish_cw(dish)))
 }
 
 fn rotate_dish_cw(dish: &[String]) -> Vec<String> {
