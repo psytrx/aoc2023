@@ -1,3 +1,5 @@
+#![feature(linked_list_remove)]
+
 mod problems;
 mod util;
 
