@@ -55,15 +55,23 @@ fn north_beam_load(dish: &[String]) -> usize {
         .sum::<usize>()
 }
 
-fn rotate_dish_ccw(dish: &[String]) -> Vec<String> {
-    rotate_dish_cw(&rotate_dish_cw(&rotate_dish_cw(dish)))
-}
-
 fn rotate_dish_cw(dish: &[String]) -> Vec<String> {
     let mut rotated = Vec::with_capacity(dish[0].len());
     for i in 0..dish[0].len() {
         let mut row = Vec::with_capacity(dish.len());
         for string in dish.iter().rev() {
+            row.push(string.as_bytes()[i] as char);
+        }
+        rotated.push(row.into_iter().collect());
+    }
+    rotated
+}
+
+fn rotate_dish_ccw(dish: &[String]) -> Vec<String> {
+    let mut rotated = Vec::with_capacity(dish[0].len());
+    for i in (0..dish[0].len()).rev() {
+        let mut row = Vec::with_capacity(dish.len());
+        for string in dish.iter() {
             row.push(string.as_bytes()[i] as char);
         }
         rotated.push(row.into_iter().collect());
