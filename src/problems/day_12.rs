@@ -1,4 +1,3 @@
-use memoize::memoize;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 pub fn part_one(input: &str) -> anyhow::Result<String> {
@@ -24,7 +23,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     Ok(sum.to_string())
 }
 
-#[memoize]
+#[memoize::memoize]
 fn arrangements(pattern: String, groups: Vec<usize>) -> usize {
     if pattern.is_empty() && groups.is_empty() {
         1
