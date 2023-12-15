@@ -1,3 +1,5 @@
+#![feature(linked_list_remove)]
+
 mod problems;
 mod util;
 
@@ -51,6 +53,7 @@ fn load_problem_set(day: i32) -> anyhow::Result<(String, SolutionFn, SolutionFn)
         12 => (problems::day_12::part_one, problems::day_12::part_two),
         13 => (problems::day_13::part_one, problems::day_13::part_two),
         14 => (problems::day_14::part_one, problems::day_14::part_two),
+        15 => (problems::day_15::part_one, problems::day_15::part_two),
         _ => anyhow::bail!("No problem set mapped for day {}", day),
     };
 
