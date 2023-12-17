@@ -1,3 +1,5 @@
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let contraption = parse_input(input);
     let energy = compute_energy(
@@ -5,14 +7,57 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
             position: (0, 0),
             direction: Direction::Right,
         },
-        contraption,
+        &contraption,
     );
     Ok(energy.to_string())
 }
 
-fn compute_energy(beam: &Beam, contraption: Vec<Vec<Tile>>) -> usize {
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    let contraption = parse_input(input);
+
+    let horizontal = (0..contraption.len()).flat_map(|y| {
+        let left = (0, y as i32);
+        let right = (contraption[0].len() as i32 - 1, y as i32);
+        [
+            Beam {
+                position: left,
+                direction: Direction::Right,
+            },
+            Beam {
+                position: right,
+                direction: Direction::Left,
+            },
+        ]
+    });
+    let vertical = (0..contraption[0].len()).flat_map(|x| {
+        let top = (x as i32, 0);
+        let bottom = (x as i32, contraption.len() as i32 - 1);
+        [
+            Beam {
+                position: top,
+                direction: Direction::Down,
+            },
+            Beam {
+                position: bottom,
+                direction: Direction::Up,
+            },
+        ]
+    });
+    let beams = horizontal.chain(vertical);
+
+    let max_energy = beams
+        .collect::<Vec<_>>()
+        .par_iter()
+        .map(|beam| compute_energy(beam, &contraption))
+        .max()
+        .ok_or_else(|| anyhow::anyhow!("Failed to find max in empty iterator"))?;
+
+    Ok(max_energy.to_string())
+}
+
+fn compute_energy(beam: &Beam, contraption: &[Vec<Tile>]) -> usize {
     let beams = vec![beam.clone()];
-    let mut contraption = contraption.clone();
+    let mut contraption = contraption.to_vec();
 
     trace_beams(&beams, &mut contraption);
 
@@ -130,10 +175,6 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
             _ => unreachable!(),
         }
     }
-}
-
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
 }
 
 fn parse_input(input: &str) -> Vec<Vec<Tile>> {
