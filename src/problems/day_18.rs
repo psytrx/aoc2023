@@ -3,7 +3,32 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
     Ok(calculate_area(instructions)?.to_string())
 }
 
-fn calculate_area(instructions: Vec<DigInstruction>) -> anyhow::Result<i32> {
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    let instructions = parse_input(input)?
+        .iter()
+        .map(|instruction| {
+            let hex = instruction.color[2..8].to_string();
+
+            let length = i64::from_str_radix(&hex[..hex.len() - 1], 16)?;
+            let direction = (match &hex[hex.len() - 1..] {
+                "0" => "R",
+                "1" => "D",
+                "2" => "L",
+                "3" => "U",
+                _ => anyhow::bail!("Invalid color: {}", hex),
+            })
+            .to_string();
+            Ok(DigInstruction {
+                direction,
+                length,
+                color: hex,
+            })
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(calculate_area(instructions)?.to_string())
+}
+
+fn calculate_area(instructions: Vec<DigInstruction>) -> anyhow::Result<i64> {
     let (mut x, mut y) = (0, 0);
 
     let mut inner_area = 0;
@@ -27,10 +52,6 @@ fn calculate_area(instructions: Vec<DigInstruction>) -> anyhow::Result<i32> {
     Ok((inner_area + border_area) / 2 + 1)
 }
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
-}
-
 fn parse_input(input: &str) -> anyhow::Result<Vec<DigInstruction>> {
     input
         .lines()
@@ -47,6 +68,6 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<DigInstruction>> {
 
 struct DigInstruction {
     direction: String,
-    length: i32,
+    length: i64,
     color: String,
 }
