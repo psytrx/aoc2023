@@ -1,29 +1,30 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let instructions = parse_input(input)?;
+    Ok(calculate_area(instructions)?.to_string())
+}
 
-    let mut vertices = Vec::with_capacity(instructions.len());
+fn calculate_area(instructions: Vec<DigInstruction>) -> anyhow::Result<i32> {
     let (mut x, mut y) = (0, 0);
+
+    let mut inner_area = 0;
+    let mut border_area = 0;
+
     for instruction in instructions {
-        vertices.push((x, y));
-        (x, y) = match instruction.direction.as_str() {
+        let (new_x, new_y) = match instruction.direction.as_str() {
             "R" => (x + instruction.length, y),
             "D" => (x, y + instruction.length),
             "L" => (x - instruction.length, y),
             "U" => (x, y - instruction.length),
-            _ => unreachable!(),
-        }
-    }
-    vertices.push((x, y));
+            _ => anyhow::bail!("Invalid direction: {}", instruction.direction),
+        };
 
-    let mut area = 0;
-    for i in 0..vertices.len() {
-        let (x1, y1) = vertices[i];
-        let (x2, y2) = vertices[(i + 1) % vertices.len()];
-        area += x1 * y2 - x2 * y1;
-    }
-    area /= 2;
+        inner_area += (x - new_x) * (y + new_y);
+        border_area += instruction.length;
 
-    Ok(area.to_string())
+        (x, y) = (new_x, new_y);
+    }
+
+    Ok((inner_area + border_area) / 2 + 1)
 }
 
 pub fn part_two(_input: &str) -> anyhow::Result<String> {
