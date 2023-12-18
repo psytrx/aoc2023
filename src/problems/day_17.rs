@@ -52,8 +52,8 @@ fn minimize_heat_loss(grid: Vec<Vec<i32>>, min_dist: i32, max_dist: i32) -> i32 
     unreachable!()
 }
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    Ok(minimize_heat_loss(parse_input(input)?, 4, 10).to_string())
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Vec<Vec<i32>>> {
