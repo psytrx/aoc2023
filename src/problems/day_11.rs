@@ -62,10 +62,11 @@ fn parse_input(input: &str) -> Vec<Vec<Option<(i64, i64)>>> {
         .lines()
         .enumerate()
         .map(|(y, line)| {
-            line.chars()
+            line.as_bytes()
+                .iter()
                 .enumerate()
-                .map(|(x, cell)| {
-                    if cell == '#' {
+                .map(|(x, &cell)| {
+                    if cell == b'#' {
                         id += 1;
                         Some((x as i64, y as i64))
                     } else {

@@ -35,7 +35,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
             line.symbols
                 .iter()
                 .filter_map(|symbol| {
-                    if symbol.char == '*' {
+                    if symbol.kind == b'*' {
                         let line_lo = i.saturating_sub(1);
                         let line_hi = i + 1;
 
@@ -73,15 +73,15 @@ fn parse_line(line: &str) -> anyhow::Result<SchematicLine> {
     let mut symbols = Vec::with_capacity(16);
     let mut numbers = Vec::with_capacity(16);
 
-    line.chars().enumerate().try_for_each(|(i, c)| {
+    line.as_bytes().iter().enumerate().try_for_each(|(i, &c)| {
         let is_digit = c.is_ascii_digit();
-        let is_symbol = !is_digit && c != '.';
+        let is_symbol = !is_digit && c != b'.';
 
         let is_whitespace = !is_digit && !is_symbol;
 
         if is_digit {
             // append digit to number
-            match c.to_digit(10) {
+            match char::to_digit(c as char, 10) {
                 Some(digit) => {
                     digits.push(digit);
                 }
@@ -91,7 +91,7 @@ fn parse_line(line: &str) -> anyhow::Result<SchematicLine> {
 
         if is_symbol {
             // append symbol to symbol span
-            symbols.push(Symbol { char: c, pos: i });
+            symbols.push(Symbol { kind: c, pos: i });
         }
 
         if (is_whitespace || is_symbol) && !digits.is_empty() {
@@ -130,6 +130,6 @@ struct NumberSpan {
 }
 
 struct Symbol {
-    char: char,
+    kind: u8,
     pos: usize,
 }

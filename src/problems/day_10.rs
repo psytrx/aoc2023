@@ -13,7 +13,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         let mut count = 0;
         for tile in row.iter_mut() {
             if tile.visited {
-                if "|LJ".contains(tile.kind) {
+                if matches!(tile.kind, b'|' | b'L' | b'J') {
                     count += 1;
                 }
             } else if count % 2 == 1 {
@@ -86,10 +86,11 @@ fn parse_input(input: &str) -> anyhow::Result<PipeMap> {
         .lines()
         .enumerate()
         .map(|(y, line)| {
-            line.chars()
+            line.as_bytes()
+                .iter()
                 .enumerate()
-                .map(|(x, c)| {
-                    if c == 'S' {
+                .map(|(x, &c)| {
+                    if c == b'S' {
                         start = Some((x, y));
                     }
                     Tile {
@@ -116,24 +117,24 @@ struct PipeMap {
 #[derive(Clone)]
 struct Tile {
     pos: (usize, usize),
-    kind: char,
+    kind: u8,
     visited: bool,
 }
 
 impl Tile {
     fn connects_top(&self) -> bool {
-        "|LJS".contains(self.kind)
+        matches!(self.kind, b'|' | b'L' | b'J' | b'S')
     }
 
     fn connects_bottom(&self) -> bool {
-        "|F7S".contains(self.kind)
+        matches!(self.kind, b'|' | b'F' | b'7' | b'S')
     }
 
     fn connects_left(&self) -> bool {
-        "-J7S".contains(self.kind)
+        matches!(self.kind, b'-' | b'J' | b'7' | b'S')
     }
 
     fn connects_right(&self) -> bool {
-        "-LFS".contains(self.kind)
+        matches!(self.kind, b'-' | b'L' | b'F' | b'S')
     }
 }

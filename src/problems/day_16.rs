@@ -5,7 +5,7 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
     let energy = compute_energy(
         &Beam {
             position: (0, 0),
-            direction: Direction::Right,
+            direction: 0,
         },
         &contraption,
     );
@@ -21,11 +21,11 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         [
             Beam {
                 position: left,
-                direction: Direction::Right,
+                direction: 0,
             },
             Beam {
                 position: right,
-                direction: Direction::Left,
+                direction: 2,
             },
         ]
     });
@@ -35,11 +35,11 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         [
             Beam {
                 position: top,
-                direction: Direction::Down,
+                direction: 1,
             },
             Beam {
                 position: bottom,
-                direction: Direction::Up,
+                direction: 3,
             },
         ]
     });
@@ -83,41 +83,53 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
         }
 
         match tile.kind {
-            '.' => {
+            b'.' => {
                 let position = match beam.direction {
-                    Direction::Up => (x, y - 1),
-                    Direction::Down => (x, y + 1),
-                    Direction::Left => (x - 1, y),
-                    Direction::Right => (x + 1, y),
+                    0 => (x + 1, y),
+                    1 => (x, y + 1),
+                    2 => (x - 1, y),
+                    3 => (x, y - 1),
+                    _ => unreachable!(),
                 };
                 beams.push(Beam { position, ..beam });
             }
-            '-' => match beam.direction {
-                Direction::Left | Direction::Right => {
+            b'-' => match beam.direction {
+                0 | 2 => {
                     let new_x = match beam.direction {
-                        Direction::Left => x - 1,
-                        Direction::Right => x + 1,
+                        2 => x - 1,
+                        0 => x + 1,
                         _ => unreachable!(),
                     };
                     let position = (new_x, y);
                     beams.push(Beam { position, ..beam })
                 }
-                Direction::Up | Direction::Down => {
+                1 | 3 => {
                     beams.push(Beam {
                         position: (x - 1, y),
-                        direction: Direction::Left,
+                        direction: 2,
                     });
                     beams.push(Beam {
                         position: (x + 1, y),
-                        direction: Direction::Right,
+                        direction: 0,
                     });
                 }
+                _ => unreachable!(),
             },
-            '|' => match beam.direction {
-                Direction::Up | Direction::Down => {
+            b'|' => match beam.direction {
+                0 | 2 => {
+                    beams.push(Beam {
+                        position: (x, y - 1),
+                        direction: 3,
+                    });
+                    beams.push(Beam {
+                        position: (x, y + 1),
+                        direction: 1,
+                    });
+                }
+                1 | 3 => {
                     let new_y = match beam.direction {
-                        Direction::Up => y - 1,
-                        Direction::Down => y + 1,
+                        3 => y - 1,
+                        1 => y + 1,
                         _ => unreachable!(),
                     };
                     beams.push(Beam {
@@ -125,52 +137,45 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
                         ..beam
                     })
                 }
-                Direction::Left | Direction::Right => {
-                    beams.push(Beam {
-                        position: (x, y - 1),
-                        direction: Direction::Up,
-                    });
-                    beams.push(Beam {
-                        position: (x, y + 1),
-                        direction: Direction::Down,
-                    });
-                }
+                _ => unreachable!(),
             },
-            '/' => match beam.direction {
-                Direction::Up => beams.push(Beam {
-                    position: (x + 1, y),
-                    direction: Direction::Right,
-                }),
-                Direction::Down => beams.push(Beam {
-                    position: (x - 1, y),
-                    direction: Direction::Left,
-                }),
-                Direction::Left => beams.push(Beam {
-                    position: (x, y + 1),
-                    direction: Direction::Down,
-                }),
-                Direction::Right => beams.push(Beam {
+            b'/' => match beam.direction {
+                0 => beams.push(Beam {
                     position: (x, y - 1),
-                    direction: Direction::Up,
+                    direction: 3,
                 }),
+                1 => beams.push(Beam {
+                    position: (x - 1, y),
+                    direction: 2,
+                }),
+                2 => beams.push(Beam {
+                    position: (x, y + 1),
+                    direction: 1,
+                }),
+                3 => beams.push(Beam {
+                    position: (x + 1, y),
+                    direction: 0,
+                }),
+                _ => unreachable!(),
             },
-            '\\' => match beam.direction {
-                Direction::Up => beams.push(Beam {
-                    position: (x - 1, y),
-                    direction: Direction::Left,
-                }),
-                Direction::Down => beams.push(Beam {
-                    position: (x + 1, y),
-                    direction: Direction::Right,
-                }),
-                Direction::Left => beams.push(Beam {
-                    position: (x, y - 1),
-                    direction: Direction::Up,
-                }),
-                Direction::Right => beams.push(Beam {
+            b'\\' => match beam.direction {
+                0 => beams.push(Beam {
                     position: (x, y + 1),
-                    direction: Direction::Down,
+                    direction: 1,
                 }),
+                1 => beams.push(Beam {
+                    position: (x + 1, y),
+                    direction: 0,
+                }),
+                2 => beams.push(Beam {
+                    position: (x, y - 1),
+                    direction: 3,
+                }),
+                3 => beams.push(Beam {
+                    position: (x - 1, y),
+                    direction: 2,
+                }),
+                _ => unreachable!(),
             },
             _ => unreachable!(),
         }
@@ -181,10 +186,11 @@ fn parse_input(input: &str) -> Vec<Vec<Tile>> {
     input
         .lines()
         .map(|line| {
-            line.chars()
-                .map(|c| Tile {
+            line.as_bytes()
+                .iter()
+                .map(|&c| Tile {
                     kind: c,
-                    beams: std::collections::HashSet::new(),
+                    beams: hashbrown::hash_set::HashSet::new(),
                 })
                 .collect()
         })
@@ -193,20 +199,12 @@ fn parse_input(input: &str) -> Vec<Vec<Tile>> {
 
 #[derive(Clone)]
 struct Tile {
-    kind: char,
-    beams: std::collections::HashSet<Beam>,
+    kind: u8,
+    beams: hashbrown::hash_set::HashSet<Beam>,
 }
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 struct Beam {
     position: (i32, i32),
-    direction: Direction,
-}
-
-#[derive(Clone, Eq, PartialEq, Hash)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
+    direction: u8,
 }
