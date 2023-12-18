@@ -24,11 +24,13 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         }
         dish = rotate_dish_cw(dish);
 
-        if !hashes.insert(dish.clone()) {
+        let hash = hash(&dish);
+
+        if !hashes.insert(hash) {
             if cycle_start.is_none() {
                 cycle_start = Some(i);
                 hashes.clear();
-                hashes.insert(dish.clone());
+                hashes.insert(hash);
             } else {
                 break;
             }
@@ -41,6 +43,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
 
     let cycle_start = cycle_start.ok_or_else(|| anyhow::anyhow!("Failed to find cycle start"))?;
     let cycle_index = (test_cycles - cycle_start) % loads.len() - 1;
+
     Ok(loads[cycle_index].to_string())
 }
 
@@ -105,4 +108,19 @@ fn parse_input(input: &str) -> Vec<String> {
         .lines()
         .map(|line| line.to_string())
         .collect::<Vec<String>>()
+}
+
+fn hash(dish: &[String]) -> u64 {
+    let mut hash = 0;
+    for row in dish {
+        for c in row.chars() {
+            match c {
+                '.' => hash *= 3,
+                'O' => hash = hash * 3 + 1,
+                '#' => hash = hash * 3 + 2,
+                _ => unreachable!(),
+            }
+        }
+    }
+    hash
 }
