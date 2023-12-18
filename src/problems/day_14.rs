@@ -1,7 +1,7 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     Ok(
-        north_beam_load(&rotate_dish_cw(&slide_dish_west(&rotate_dish_ccw(
-            &parse_input(input),
+        north_beam_load(rotate_dish_cw(slide_dish_west(rotate_dish_ccw(
+            parse_input(input),
         ))))
         .to_string(),
     )
@@ -17,12 +17,12 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     let test_cycles = 1_000_000_000;
 
     for i in 0..test_cycles {
-        dish = rotate_dish_ccw(&dish);
+        dish = rotate_dish_ccw(dish);
         for _ in 0..4 {
-            dish = slide_dish_west(&dish);
-            dish = rotate_dish_cw(&dish);
+            dish = slide_dish_west(dish);
+            dish = rotate_dish_cw(dish);
         }
-        dish = rotate_dish_cw(&dish);
+        dish = rotate_dish_cw(dish);
 
         if !hashes.insert(dish.clone()) {
             if cycle_start.is_none() {
@@ -35,7 +35,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         }
 
         if cycle_start.is_some() {
-            loads.push(north_beam_load(&dish));
+            loads.push(north_beam_load(dish.clone()));
         }
     }
 
@@ -44,7 +44,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     Ok(loads[cycle_index].to_string())
 }
 
-fn north_beam_load(dish: &[String]) -> usize {
+fn north_beam_load(dish: Vec<String>) -> usize {
     dish.iter()
         .enumerate()
         .map(|(i, row)| {
@@ -55,31 +55,37 @@ fn north_beam_load(dish: &[String]) -> usize {
         .sum::<usize>()
 }
 
-fn rotate_dish_cw(dish: &[String]) -> Vec<String> {
-    let mut rotated = Vec::with_capacity(dish[0].len());
-    for i in 0..dish[0].len() {
-        let mut row = Vec::with_capacity(dish.len());
+fn rotate_dish_cw(dish: Vec<String>) -> Vec<String> {
+    let dish_len = dish.len();
+    let row_len = dish[0].len();
+    let mut rotated = Vec::with_capacity(row_len);
+
+    for i in 0..row_len {
+        let mut row = String::with_capacity(dish_len);
         for string in dish.iter().rev() {
             row.push(string.as_bytes()[i] as char);
         }
-        rotated.push(row.into_iter().collect());
+        rotated.push(row);
     }
     rotated
 }
 
-fn rotate_dish_ccw(dish: &[String]) -> Vec<String> {
-    let mut rotated = Vec::with_capacity(dish[0].len());
-    for i in (0..dish[0].len()).rev() {
-        let mut row = Vec::with_capacity(dish.len());
+fn rotate_dish_ccw(dish: Vec<String>) -> Vec<String> {
+    let dish_len = dish.len();
+    let row_len = dish[0].len();
+    let mut rotated = Vec::with_capacity(row_len);
+
+    for i in (0..row_len).rev() {
+        let mut row = String::with_capacity(dish_len);
         for string in dish.iter() {
             row.push(string.as_bytes()[i] as char);
         }
-        rotated.push(row.into_iter().collect());
+        rotated.push(row);
     }
     rotated
 }
 
-fn slide_dish_west(dish: &[String]) -> Vec<String> {
+fn slide_dish_west(dish: Vec<String>) -> Vec<String> {
     dish.iter()
         .map(|row| slide_row_west(row.to_string()))
         .collect()
