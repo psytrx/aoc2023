@@ -10,13 +10,12 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let mut dish = parse_input(input);
 
-    let mut hashes = hashbrown::HashSet::with_capacity(1024);
-    let mut loads = Vec::with_capacity(1024);
-    let mut cycle_start = None;
+    let mut visited = hashbrown::HashMap::with_capacity(1024);
+    visited.insert(dish.clone(), 0);
 
     let test_cycles = 1_000_000_000;
 
-    for i in 0..test_cycles {
+    let (cycle_start, cycle_end) = loop {
         dish = rotate_dish_ccw(dish);
         for _ in 0..4 {
             dish = slide_dish_west(dish);
@@ -24,27 +23,21 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         }
         dish = rotate_dish_cw(dish);
 
-        let hash = hash(&dish);
-
-        if !hashes.insert(hash) {
-            if cycle_start.is_none() {
-                cycle_start = Some(i);
-                hashes.clear();
-                hashes.insert(hash);
-            } else {
-                break;
-            }
+        if let Some(prev) = visited.insert(dish.clone(), visited.len()) {
+            break (prev, visited.len());
         }
+    };
 
-        if cycle_start.is_some() {
-            loads.push(north_beam_load(dish.clone()));
-        }
-    }
+    let cycle_offset = test_cycles - cycle_start;
+    let cycle_len = cycle_end - cycle_start;
+    let rem = cycle_offset % cycle_len;
+    let target = cycle_start + rem;
+    let (dish, _) = visited
+        .iter()
+        .find(|(_, &i)| i == target)
+        .ok_or_else(|| anyhow::anyhow!("Failed to find target dish"))?;
 
-    let cycle_start = cycle_start.ok_or_else(|| anyhow::anyhow!("Failed to find cycle start"))?;
-    let cycle_index = (test_cycles - cycle_start) % loads.len() - 1;
-
-    Ok(loads[cycle_index].to_string())
+    Ok(north_beam_load(dish.clone()).to_string())
 }
 
 fn north_beam_load(dish: Vec<String>) -> usize {
@@ -108,19 +101,4 @@ fn parse_input(input: &str) -> Vec<String> {
         .lines()
         .map(|line| line.to_string())
         .collect::<Vec<String>>()
-}
-
-fn hash(dish: &[String]) -> u64 {
-    let mut hash = 0;
-    for row in dish {
-        for c in row.chars() {
-            match c {
-                '.' => hash *= 3,
-                'O' => hash = hash * 3 + 1,
-                '#' => hash = hash * 3 + 2,
-                _ => unreachable!(),
-            }
-        }
-    }
-    hash
 }
