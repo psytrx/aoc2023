@@ -2,80 +2,109 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let sum = parse_input(input)?
-        .into_par_iter()
+        .into_iter()
         .map(|(pattern, groups)| arrangements(pattern, groups))
         .sum::<usize>();
     Ok(sum.to_string())
 }
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
+    let n = 5;
     let sum = parse_input(input)?
         .into_par_iter()
         .map(|(pattern, groups)| {
-            let pattern = std::iter::repeat(pattern)
-                .take(5)
-                .collect::<Vec<_>>()
-                .join("?");
-            let groups = groups.repeat(5);
-            arrangements(pattern, groups)
+            let mut repeated_pattern = Vec::with_capacity(pattern.len() * n + n);
+            for i in 0..n {
+                if i > 0 {
+                    repeated_pattern.push(b'?');
+                }
+                repeated_pattern.extend_from_slice(&pattern);
+            }
+            arrangements(repeated_pattern, groups.repeat(n))
         })
         .sum::<usize>();
     Ok(sum.to_string())
 }
 
-#[memoize::memoize]
-fn arrangements(pattern: String, groups: Vec<usize>) -> usize {
-    if pattern.is_empty() && groups.is_empty() {
-        1
-    } else if pattern.is_empty() && !groups.is_empty() || groups.is_empty() && pattern.contains('#')
-    {
-        0
-    } else if let Some(stripped) = pattern.strip_prefix('.') {
-        let pattern = stripped.to_string();
-        arrangements(pattern, groups)
-    } else if pattern.starts_with('#') {
-        let expected_group = groups[0];
+fn arrangements(mut pattern: Vec<u8>, groups: Vec<usize>) -> usize {
+    // Allows us to skip bounds check
+    pattern.push(b'.');
 
-        if pattern.len() < expected_group {
-            0
-        } else {
-            let prefix = &pattern[..expected_group];
-            if prefix.contains('.') {
-                0
-            } else if pattern.len() == expected_group {
-                if groups.len() == 1 {
-                    1
-                } else {
-                    0
-                }
-            } else {
-                let c = pattern.as_bytes()[expected_group];
-                if c == b'.' || c == b'?' {
-                    let pattern = pattern[expected_group + 1..].to_string();
-                    let groups = groups[1..].to_vec();
-                    arrangements(pattern, groups)
-                } else {
-                    0
-                }
+    // Allows us to check _ranges_ for placing springs
+    // without checking each element in between.
+    let broken_acc = {
+        let mut acc = Vec::with_capacity(pattern.len() + 1);
+        acc.push(0);
+
+        let mut sum = 0;
+        for &c in pattern.iter() {
+            if c != b'.' {
+                sum += 1;
+            }
+            acc.push(sum);
+        }
+        acc
+    };
+
+    // Calculate padding for shifting the pattern to the right
+    let padding = pattern.len() - groups.iter().sum::<usize>() - groups.len() + 1;
+
+    // Run a prefix sum for each group over the pattern.
+    // If we can carry a positive sum to the end, we found all possible arrangements.
+    // let mut table = vec![0; pattern.len() * groups.len()];
+    let mut table = vec![vec![0; pattern.len()]; groups.len()];
+    let mut arrangements = 0;
+
+    let group_size = groups[0];
+    let mut valid = true;
+    for i in 0..padding {
+        let has_trailing_pound = pattern[i + group_size] == b'#';
+        if has_trailing_pound {
+            // Pattern enforces a larger group than allowed
+            arrangements = 0
+        } else if valid {
+            let spring_can_fit = broken_acc[i + group_size] - broken_acc[i] == group_size;
+            if spring_can_fit {
+                arrangements += 1;
             }
         }
-    } else if let Some(pat_suffix) = pattern.strip_prefix('?') {
-        let dot = {
-            let pattern = ".".to_string() + pat_suffix;
-            let groups = groups.clone();
-            arrangements(pattern, groups)
-        };
-        let pound = {
-            let pattern = "#".to_string() + pat_suffix;
-            arrangements(pattern, groups)
-        };
-        dot + pound
-    } else {
-        unreachable!()
+
+        table[0][group_size + i] = arrangements;
+
+        if pattern[i] == b'#' {
+            // Pattern enforces a spring _before_ the current group: not a valid arrangement.
+            valid = false
+        }
     }
+
+    let mut lo = group_size + 1;
+    for (row, &group_size) in groups.iter().enumerate().skip(1) {
+        arrangements = 0;
+
+        let hi = lo + padding;
+        for i in lo..hi {
+            let has_trailing_pound = pattern[i + group_size] == b'#';
+            if has_trailing_pound {
+                arrangements = 0;
+            } else if pattern[i - 1] != b'#'
+                && broken_acc[i + group_size] - broken_acc[i] == group_size
+            {
+                let spring_can_fit = broken_acc[i + group_size] - broken_acc[i] == group_size;
+                if spring_can_fit {
+                    arrangements += table[row - 1][i - 1];
+                }
+            }
+
+            table[row][i + group_size] = arrangements;
+        }
+
+        lo += group_size + 1;
+    }
+
+    arrangements
 }
 
-fn parse_input(input: &str) -> anyhow::Result<Vec<(String, Vec<usize>)>> {
+fn parse_input(input: &str) -> anyhow::Result<Vec<(Vec<u8>, Vec<usize>)>> {
     input
         .lines()
         .map(|line| {
@@ -89,9 +118,9 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<(String, Vec<usize>)>> {
                     s.parse::<usize>()
                         .map_err(|e| anyhow::anyhow!("Failed to parse grou counts: {}", e))
                 })
-                .collect::<anyhow::Result<Vec<usize>>>()?;
+                .collect::<anyhow::Result<_>>()?;
 
-            Ok((pattern.to_string(), groups))
+            Ok((pattern.as_bytes().to_vec(), groups))
         })
-        .collect::<anyhow::Result<Vec<(String, Vec<usize>)>>>()
+        .collect::<anyhow::Result<_>>()
 }
