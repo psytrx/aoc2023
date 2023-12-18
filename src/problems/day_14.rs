@@ -1,9 +1,6 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let mut dish = parse_input(input);
-    rotate_dish_ccw_in_place(&mut dish);
-    slide_dish_west_in_place(&mut dish);
-    rotate_dish_cw_in_place(&mut dish);
-
+    slide_dish_north_in_place(&mut dish);
     Ok(north_beam_load(dish).to_string())
 }
 
@@ -16,14 +13,10 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     let test_cycles = 1_000_000_000;
 
     let (cycle_start, cycle_end) = loop {
-        rotate_dish_ccw_in_place(&mut dish);
-        for _ in 0..4 {
-            slide_dish_west_in_place(&mut dish);
-            rotate_dish_cw_in_place(&mut dish);
-            // dish = rotate_dish_cw(dish);
-        }
-        // dish = rotate_dish_cw(dish);
-        rotate_dish_cw_in_place(&mut dish);
+        slide_dish_north_in_place(&mut dish);
+        slide_dish_west_in_place(&mut dish);
+        slide_dish_south_in_place(&mut dish);
+        slide_dish_east_in_place(&mut dish);
 
         if let Some(prev) = visited.insert(dish.clone(), visited.len()) {
             break (prev, visited.len());
@@ -53,62 +46,72 @@ fn north_beam_load(dish: Vec<Vec<u8>>) -> usize {
         .sum::<usize>()
 }
 
-fn rotate_dish_cw_in_place(dish: &mut Vec<Vec<u8>>) {
-    let n = dish.len();
-    for layer in 0..n / 2 {
-        let (lo, hi) = (layer, n - 1 - layer);
-        for i in lo..hi {
-            let offset = i - lo;
-
-            // save top
-            let top = dish[lo][i];
-
-            dish[lo][i] = dish[hi - offset][lo];
-            dish[hi - offset][lo] = dish[hi][hi - offset];
-            dish[hi][hi - offset] = dish[i][hi];
-            dish[i][hi] = top;
+fn slide_dish_north_in_place(dish: &mut [Vec<u8>]) {
+    for x in 0..dish[0].len() {
+        let mut roll_until = 0;
+        for y in 0..dish.len() {
+            if dish[y][x] == b'O' {
+                if y > roll_until {
+                    dish[roll_until][x] = b'O';
+                    dish[y][x] = b'.';
+                }
+                roll_until += 1;
+            } else if dish[y][x] == b'#' {
+                roll_until = y + 1;
+            }
         }
     }
 }
 
-fn rotate_dish_ccw_in_place(dish: &mut Vec<Vec<u8>>) {
-    let n = dish.len();
-    for layer in 0..n / 2 {
-        let (lo, hi) = (layer, n - 1 - layer);
-        for i in lo..hi {
-            let offset = i - lo;
+fn slide_dish_east_in_place(dish: &mut [Vec<u8>]) {
+    for y in 0..dish.len() {
+        let mut roll_until = dish[0].len() - 1;
+        for x in (0..dish[0].len()).rev() {
+            if dish[y][x] == b'O' {
+                if x < roll_until {
+                    dish[y][roll_until] = b'O';
+                    dish[y][x] = b'.';
+                }
+                roll_until -= 1;
+            } else if dish[y][x] == b'#' {
+                roll_until = x - 1;
+            }
+        }
+    }
+}
 
-            // save top
-            let top = dish[lo][i];
-
-            dish[lo][i] = dish[i][hi];
-            dish[i][hi] = dish[hi][hi - offset];
-            dish[hi][hi - offset] = dish[hi - offset][lo];
-            dish[hi - offset][lo] = top;
+fn slide_dish_south_in_place(dish: &mut [Vec<u8>]) {
+    for x in 0..dish[0].len() {
+        let mut roll_until = dish.len() - 1;
+        for y in (0..dish.len()).rev() {
+            if dish[y][x] == b'O' {
+                if y < roll_until {
+                    dish[roll_until][x] = b'O';
+                    dish[y][x] = b'.';
+                }
+                roll_until -= 1;
+            } else if dish[y][x] == b'#' {
+                roll_until = y - 1;
+            }
         }
     }
 }
 
 fn slide_dish_west_in_place(dish: &mut [Vec<u8>]) {
-    for row in dish.iter_mut() {
-        *row = slide_row_west(row.to_vec());
-    }
-}
-
-#[memoize::memoize]
-fn slide_row_west(row: Vec<u8>) -> Vec<u8> {
-    let mut row = row;
-    let mut slid = true;
-    while slid {
-        slid = false;
-        for i in 0..row.len() - 1 {
-            if row[i] == b'.' && row[i + 1] == b'O' {
-                row.swap(i, i + 1);
-                slid = true;
+    for y in 0..dish.len() {
+        let mut roll_until = 0;
+        for x in 0..dish[0].len() {
+            if dish[y][x] == b'O' {
+                if x > roll_until {
+                    dish[y][roll_until] = b'O';
+                    dish[y][x] = b'.';
+                }
+                roll_until += 1;
+            } else if dish[y][x] == b'#' {
+                roll_until = x + 1;
             }
         }
     }
-    row
 }
 
 fn parse_input(input: &str) -> Vec<Vec<u8>> {
