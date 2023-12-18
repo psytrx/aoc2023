@@ -66,7 +66,7 @@ fn compute_energy(beam: &Beam, contraption: &[Vec<Tile>]) -> usize {
     contraption
         .iter()
         .flat_map(|row| row.iter())
-        .filter(|tile| !tile.beams.is_empty())
+        .filter(|tile| tile.visited.iter().any(|&b| b))
         .count()
 }
 
@@ -80,9 +80,10 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
         }
 
         let tile = &mut contraption[y as usize][x as usize];
-        if !tile.beams.insert(beam.clone()) {
+        if tile.visited[beam.direction as usize] {
             continue;
         }
+        tile.visited[beam.direction as usize] = true;
 
         for ((dx, dy), dir) in interact(tile.kind, beam.direction) {
             beams.push(Beam {
@@ -153,7 +154,7 @@ fn parse_input(input: &str) -> Vec<Vec<Tile>> {
                 .iter()
                 .map(|&c| Tile {
                     kind: c,
-                    beams: hashbrown::hash_set::HashSet::new(),
+                    visited: [false; 4],
                 })
                 .collect()
         })
@@ -163,7 +164,7 @@ fn parse_input(input: &str) -> Vec<Vec<Tile>> {
 #[derive(Clone)]
 struct Tile {
     kind: u8,
-    beams: hashbrown::hash_set::HashSet<Beam>,
+    visited: [bool; 4],
 }
 
 #[derive(Clone, Eq, PartialEq)]

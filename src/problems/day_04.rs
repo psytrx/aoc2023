@@ -10,23 +10,22 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let cards = parse_input(input)?;
-    let mut copies = std::collections::HashMap::new();
-    // Idea: create a ring buffer instead of using a hashmap?
+
+    let mut copies = vec![1; cards.len()];
 
     Ok(cards
         .iter()
         .enumerate()
         .fold(0, |card_count, (i, card)| {
-            let instances = match copies.get(&i) {
-                Some(&count) => 1 + count,
-                None => 1,
-            };
+            let instances = copies[i];
 
             let points = card.matching_numbers();
-            for j in i + 1..=(i + points as usize).min(cards.len() - 1) {
-                let old_copy_count = copies.get(&j).unwrap_or(&0);
-                let new_copy_count = old_copy_count + instances;
-                copies.insert(j, new_copy_count);
+            for copies in copies
+                .iter_mut()
+                .take((i + points as usize).min(cards.len() - 1) + 1)
+                .skip(i + 1)
+            {
+                *copies += instances;
             }
 
             card_count + instances
