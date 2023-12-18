@@ -1,8 +1,7 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let mut dish = parse_input(input);
     rotate_dish_ccw_in_place(&mut dish);
-
-    let mut dish = slide_dish_west(dish);
+    slide_dish_west_in_place(&mut dish);
     rotate_dish_cw_in_place(&mut dish);
 
     Ok(north_beam_load(dish).to_string())
@@ -19,7 +18,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     let (cycle_start, cycle_end) = loop {
         rotate_dish_ccw_in_place(&mut dish);
         for _ in 0..4 {
-            dish = slide_dish_west(dish);
+            slide_dish_west_in_place(&mut dish);
             rotate_dish_cw_in_place(&mut dish);
             // dish = rotate_dish_cw(dish);
         }
@@ -90,10 +89,10 @@ fn rotate_dish_ccw_in_place(dish: &mut Vec<Vec<u8>>) {
     }
 }
 
-fn slide_dish_west(dish: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
-    dish.into_iter()
-        .map(|row| slide_row_west(row.to_vec()))
-        .collect()
+fn slide_dish_west_in_place(dish: &mut [Vec<u8>]) {
+    for row in dish.iter_mut() {
+        *row = slide_row_west(row.to_vec());
+    }
 }
 
 #[memoize::memoize]
