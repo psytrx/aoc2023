@@ -1,5 +1,9 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    Ok(minimize_heat_loss(parse_input(input)?, 1, 3).to_string())
+    Ok(minimize_heat_loss(parse_input(input), 1, 3).to_string())
+}
+
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    Ok(minimize_heat_loss(parse_input(input), 4, 10).to_string())
 }
 
 fn minimize_heat_loss(grid: Vec<Vec<i32>>, min_dist: i32, max_dist: i32) -> i32 {
@@ -52,17 +56,9 @@ fn minimize_heat_loss(grid: Vec<Vec<i32>>, min_dist: i32, max_dist: i32) -> i32 
     unreachable!()
 }
 
-pub fn part_two(input: &str) -> anyhow::Result<String> {
-    Ok(minimize_heat_loss(parse_input(input)?, 4, 10).to_string())
-}
-
-fn parse_input(input: &str) -> anyhow::Result<Vec<Vec<i32>>> {
+fn parse_input(input: &str) -> Vec<Vec<i32>> {
     input
         .lines()
-        .map(|line| {
-            line.chars()
-                .map(|c| c.to_string().parse::<i32>().map_err(anyhow::Error::from))
-                .collect::<anyhow::Result<_>>()
-        })
-        .collect::<anyhow::Result<_>>()
+        .map(|line| line.as_bytes().iter().map(|c| (c - b'0') as i32).collect())
+        .collect()
 }

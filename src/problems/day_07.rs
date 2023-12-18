@@ -1,5 +1,3 @@
-use std::fmt::{Debug, Write};
-
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     solve(input, false)
 }
@@ -40,7 +38,6 @@ fn parse_input(input: &str, jokers: bool) -> anyhow::Result<Vec<(Hand, i32)>> {
 }
 
 struct Hand {
-    cards: Vec<Card>,
     sortable_hash: i32,
 }
 
@@ -57,10 +54,7 @@ impl Hand {
                     }
             })
         };
-        Self {
-            cards,
-            sortable_hash,
-        }
+        Self { sortable_hash }
     }
 
     const JOKER_STRENGTH: i32 = 11;
@@ -98,28 +92,13 @@ impl Hand {
             (3, 2) => HandKind::TwoPair,
             (4, 2) => HandKind::OnePair,
             (5, 1) => HandKind::HighCard,
-            _ => unreachable!(
-                "Invalid hand kind: {:?}, unique: {}, max_count: {}, jokers: {}",
-                cards, unique_cards, max_count, jokers
-            ),
+            _ => unreachable!(),
         }
     }
 
     fn from(cards: &str, jokers: bool) -> Self {
-        let cards = cards.chars().map(Card::new).collect::<Vec<_>>();
+        let cards = cards.as_bytes().iter().map(Card::new).collect::<Vec<_>>();
         Self::new(cards, jokers)
-    }
-}
-
-impl Debug for Hand {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "{}",
-            self.cards.iter().fold(String::new(), |mut output, card| {
-                let _ = write!(output, "{card:?}");
-                output
-            })
-        ))
     }
 }
 
@@ -136,34 +115,27 @@ enum HandKind {
 
 #[derive(Clone, Copy)]
 struct Card {
-    label: char,
     strength: i32,
 }
 
 impl Card {
-    fn new(label: char) -> Self {
+    fn new(label: &u8) -> Self {
         let strength = match label {
-            'A' => 14,
-            'K' => 13,
-            'Q' => 12,
-            'J' => 11,
-            'T' => 10,
-            '9' => 9,
-            '8' => 8,
-            '7' => 7,
-            '6' => 6,
-            '5' => 5,
-            '4' => 4,
-            '3' => 3,
-            '2' => 2,
+            b'A' => 14,
+            b'K' => 13,
+            b'Q' => 12,
+            b'J' => 11,
+            b'T' => 10,
+            b'9' => 9,
+            b'8' => 8,
+            b'7' => 7,
+            b'6' => 6,
+            b'5' => 5,
+            b'4' => 4,
+            b'3' => 3,
+            b'2' => 2,
             _ => unreachable!("Invalid card: {:?}", label),
         };
-        Self { label, strength }
-    }
-}
-
-impl Debug for Card {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.label))
+        Self { strength }
     }
 }

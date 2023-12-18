@@ -83,7 +83,7 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
         }
 
         match tile.kind {
-            '.' => {
+            b'.' => {
                 let position = match beam.direction {
                     Direction::Up => (x, y - 1),
                     Direction::Down => (x, y + 1),
@@ -92,7 +92,7 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
                 };
                 beams.push(Beam { position, ..beam });
             }
-            '-' => match beam.direction {
+            b'-' => match beam.direction {
                 Direction::Left | Direction::Right => {
                     let new_x = match beam.direction {
                         Direction::Left => x - 1,
@@ -113,7 +113,7 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
                     });
                 }
             },
-            '|' => match beam.direction {
+            b'|' => match beam.direction {
                 Direction::Up | Direction::Down => {
                     let new_y = match beam.direction {
                         Direction::Up => y - 1,
@@ -136,7 +136,7 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
                     });
                 }
             },
-            '/' => match beam.direction {
+            b'/' => match beam.direction {
                 Direction::Up => beams.push(Beam {
                     position: (x + 1, y),
                     direction: Direction::Right,
@@ -154,7 +154,7 @@ fn trace_beams(beams: &[Beam], contraption: &mut [Vec<Tile>]) {
                     direction: Direction::Up,
                 }),
             },
-            '\\' => match beam.direction {
+            b'\\' => match beam.direction {
                 Direction::Up => beams.push(Beam {
                     position: (x - 1, y),
                     direction: Direction::Left,
@@ -181,8 +181,9 @@ fn parse_input(input: &str) -> Vec<Vec<Tile>> {
     input
         .lines()
         .map(|line| {
-            line.chars()
-                .map(|c| Tile {
+            line.as_bytes()
+                .iter()
+                .map(|&c| Tile {
                     kind: c,
                     beams: std::collections::HashSet::new(),
                 })
@@ -193,7 +194,7 @@ fn parse_input(input: &str) -> Vec<Vec<Tile>> {
 
 #[derive(Clone)]
 struct Tile {
-    kind: char,
+    kind: u8,
     beams: std::collections::HashSet<Beam>,
 }
 

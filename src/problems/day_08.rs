@@ -33,7 +33,7 @@ fn follow_instruction(map: &Map, current: usize, instruction_idx: usize) -> usiz
     let instruction = map.instructions[instruction_idx % map.instructions.len()];
 
     let (left, right) = map.connections[current];
-    if instruction == 'L' {
+    if instruction == b'L' {
         left
     } else {
         right
@@ -60,23 +60,22 @@ fn parse_input(input: &str) -> anyhow::Result<Map> {
             map.connections[hash] = (left, right);
             map
         } else {
-            map.instructions = line.chars().collect();
+            map.instructions = line.as_bytes().to_vec();
             map
         })
     })
 }
 
-fn hash_char(c: char) -> usize {
-    c as usize - 'A' as usize
-}
-
 fn node_id_hash(node_id: &str) -> usize {
-    node_id.chars().fold(0, |acc, c| (acc << 5) | hash_char(c))
+    node_id
+        .as_bytes()
+        .iter()
+        .fold(0, |acc, &c| (acc << 5) | (c - b'A') as usize)
 }
 
 #[derive(Debug)]
 struct Map {
-    instructions: Vec<char>,
+    instructions: Vec<u8>,
     connections: Vec<(usize, usize)>,
 }
 
