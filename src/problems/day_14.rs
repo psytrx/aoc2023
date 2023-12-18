@@ -1,10 +1,11 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    Ok(
-        north_beam_load(rotate_dish_cw(slide_dish_west(rotate_dish_ccw(
-            parse_input(input),
-        ))))
-        .to_string(),
-    )
+    let mut dish = parse_input(input);
+    rotate_dish_ccw_in_place(&mut dish);
+
+    let mut dish = slide_dish_west(dish);
+    rotate_dish_cw_in_place(&mut dish);
+
+    Ok(north_beam_load(dish).to_string())
 }
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
@@ -16,12 +17,14 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     let test_cycles = 1_000_000_000;
 
     let (cycle_start, cycle_end) = loop {
-        dish = rotate_dish_ccw(dish);
+        rotate_dish_ccw_in_place(&mut dish);
         for _ in 0..4 {
             dish = slide_dish_west(dish);
-            dish = rotate_dish_cw(dish);
+            rotate_dish_cw_in_place(&mut dish);
+            // dish = rotate_dish_cw(dish);
         }
-        dish = rotate_dish_cw(dish);
+        // dish = rotate_dish_cw(dish);
+        rotate_dish_cw_in_place(&mut dish);
 
         if let Some(prev) = visited.insert(dish.clone(), visited.len()) {
             break (prev, visited.len());
@@ -40,65 +43,78 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     Ok(north_beam_load(dish.clone()).to_string())
 }
 
-fn north_beam_load(dish: Vec<String>) -> usize {
+fn north_beam_load(dish: Vec<Vec<u8>>) -> usize {
     dish.iter()
         .enumerate()
         .map(|(i, row)| {
-            let num_rounded_rocks = row.chars().filter(|&c| c == 'O').count();
+            let num_rounded_rocks = row.iter().filter(|&c| c == &b'O').count();
             let load_per_rock = dish.len() - i;
             load_per_rock * num_rounded_rocks
         })
         .sum::<usize>()
 }
 
-fn rotate_dish_cw(dish: Vec<String>) -> Vec<String> {
-    let dish_len = dish.len();
-    let row_len = dish[0].len();
-    let mut rotated = Vec::with_capacity(row_len);
+fn rotate_dish_cw_in_place(dish: &mut Vec<Vec<u8>>) {
+    let n = dish.len();
+    for layer in 0..n / 2 {
+        let (lo, hi) = (layer, n - 1 - layer);
+        for i in lo..hi {
+            let offset = i - lo;
 
-    for i in 0..row_len {
-        let mut row = String::with_capacity(dish_len);
-        for string in dish.iter().rev() {
-            row.push(string.as_bytes()[i] as char);
+            // save top
+            let top = dish[lo][i];
+
+            dish[lo][i] = dish[hi - offset][lo];
+            dish[hi - offset][lo] = dish[hi][hi - offset];
+            dish[hi][hi - offset] = dish[i][hi];
+            dish[i][hi] = top;
         }
-        rotated.push(row);
     }
-    rotated
 }
 
-fn rotate_dish_ccw(dish: Vec<String>) -> Vec<String> {
-    let dish_len = dish.len();
-    let row_len = dish[0].len();
-    let mut rotated = Vec::with_capacity(row_len);
+fn rotate_dish_ccw_in_place(dish: &mut Vec<Vec<u8>>) {
+    let n = dish.len();
+    for layer in 0..n / 2 {
+        let (lo, hi) = (layer, n - 1 - layer);
+        for i in lo..hi {
+            let offset = i - lo;
 
-    for i in (0..row_len).rev() {
-        let mut row = String::with_capacity(dish_len);
-        for string in dish.iter() {
-            row.push(string.as_bytes()[i] as char);
+            // save top
+            let top = dish[lo][i];
+
+            dish[lo][i] = dish[i][hi];
+            dish[i][hi] = dish[hi][hi - offset];
+            dish[hi][hi - offset] = dish[hi - offset][lo];
+            dish[hi - offset][lo] = top;
         }
-        rotated.push(row);
     }
-    rotated
 }
 
-fn slide_dish_west(dish: Vec<String>) -> Vec<String> {
-    dish.iter()
-        .map(|row| slide_row_west(row.to_string()))
+fn slide_dish_west(dish: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+    dish.into_iter()
+        .map(|row| slide_row_west(row.to_vec()))
         .collect()
 }
 
 #[memoize::memoize]
-fn slide_row_west(row: String) -> String {
-    let mut slided = row.to_string();
-    while slided.contains(".O") {
-        slided = slided.replace(".O", "O.");
+fn slide_row_west(row: Vec<u8>) -> Vec<u8> {
+    let mut row = row;
+    let mut slid = true;
+    while slid {
+        slid = false;
+        for i in 0..row.len() - 1 {
+            if row[i] == b'.' && row[i + 1] == b'O' {
+                row.swap(i, i + 1);
+                slid = true;
+            }
+        }
     }
-    slided
+    row
 }
 
-fn parse_input(input: &str) -> Vec<String> {
+fn parse_input(input: &str) -> Vec<Vec<u8>> {
     input
         .lines()
-        .map(|line| line.to_string())
-        .collect::<Vec<String>>()
+        .map(|line| line.as_bytes().to_vec())
+        .collect::<Vec<_>>()
 }
