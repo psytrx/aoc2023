@@ -57,6 +57,7 @@ fn load_problem_set(day: i32) -> anyhow::Result<(String, SolutionFn, SolutionFn)
         16 => (problems::day_16::part_one, problems::day_16::part_two),
         17 => (problems::day_17::part_one, problems::day_17::part_two),
         18 => (problems::day_18::part_one, problems::day_18::part_two),
+        19 => (problems::day_19::part_one, problems::day_19::part_two),
         _ => anyhow::bail!("No problem set mapped for day {}", day),
     };
 
