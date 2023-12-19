@@ -16,7 +16,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         .map(|workflow| (workflow.name.clone(), workflow))
         .collect::<hashbrown::hash_map::HashMap<_, _>>();
 
-    let mut workflow = workflow_map
+    let workflow = workflow_map
         .get("in")
         .ok_or_else(|| anyhow::anyhow!("Failed to find workflow 'in'"))?;
 
@@ -27,36 +27,113 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
         s: 1..4001,
     };
 
-    let combinations = count_combinations(&workflow_map, workflow, &ranges);
+    let combinations = count_combinations(&workflow_map, workflow, ranges)?;
 
-    Ok("not implemented".to_string())
+    Ok(combinations.to_string())
 }
 
 fn count_combinations(
     workflow_map: &hashbrown::HashMap<String, &Workflow>,
-    workflow: &&Workflow,
-    ranges: &RangeSet,
-) -> u64 {
+    workflow: &Workflow,
+    mut ranges: RangeSet,
+) -> anyhow::Result<u64> {
+    let mut count = 0;
+
     for rule in workflow.rules.iter() {
-        match rule.action {
+        // TODO: eagerly cancel on empty ranges
+
+        let (included, rest) = split_range_set(&ranges, &rule.condition);
+
+        match &rule.action {
             Action::Reject => {
                 // Drop combinations inside the range,
                 // continue with the rest
-                todo!()
+                ranges = rest;
             }
             Action::Accept => {
                 // Count combinations inside the range,
                 // continue with the rest
-                todo!()
+                count += included.size();
+                ranges = rest;
             }
-            Action::Send(_) => {
+            Action::Send(target_workflow) => {
                 // Send combinations to next workflow,
                 // continue with the rest
-                todo!()
+                let next_workflow = workflow_map.get(target_workflow).ok_or_else(|| {
+                    anyhow::anyhow!("Failed to find target workflow '{}'", target_workflow)
+                })?;
+                count += count_combinations(workflow_map, next_workflow, included)?;
+                ranges = rest;
             }
         }
     }
-    0
+
+    Ok(count)
+}
+
+fn split_range_set(ranges: &RangeSet, condition: &Option<Condition>) -> (RangeSet, RangeSet) {
+    match condition {
+        None => (ranges.clone(), RangeSet::EMPTY),
+        Some(condition) => match condition.operator {
+            b'<' => split_range_set_before(ranges, condition.value, condition.category),
+            b'>' => {
+                let (rest, included) =
+                    split_range_set_before(ranges, condition.value + 1, condition.category);
+                (included, rest)
+            }
+            _ => unreachable!(),
+        },
+    }
+}
+
+fn split_range_set_before(ranges: &RangeSet, before: u64, category: u8) -> (RangeSet, RangeSet) {
+    let front = RangeSet {
+        x: if category == b'x' {
+            ranges.x.start..before
+        } else {
+            ranges.x.clone()
+        },
+        m: if category == b'm' {
+            ranges.m.start..before
+        } else {
+            ranges.m.clone()
+        },
+        a: if category == b'a' {
+            ranges.a.start..before
+        } else {
+            ranges.a.clone()
+        },
+        s: if category == b's' {
+            ranges.s.start..before
+        } else {
+            ranges.s.clone()
+        },
+    };
+
+    let back = RangeSet {
+        x: if category == b'x' {
+            before..ranges.x.end
+        } else {
+            ranges.x.clone()
+        },
+        m: if category == b'm' {
+            before..ranges.m.end
+        } else {
+            ranges.m.clone()
+        },
+        a: if category == b'a' {
+            before..ranges.a.end
+        } else {
+            ranges.a.clone()
+        },
+        s: if category == b's' {
+            before..ranges.s.end
+        } else {
+            ranges.s.clone()
+        },
+    };
+
+    (front, back)
 }
 
 fn sort_parts(workflows: &[Workflow], parts: &[Part]) -> anyhow::Result<Vec<Part>> {
@@ -75,12 +152,9 @@ fn sort_parts(workflows: &[Workflow], parts: &[Part]) -> anyhow::Result<Vec<Part
         let action = apply_workflows(part, &workflow_map, start_workflow)?;
         match action {
             Action::Accept => {
-                // log::trace!("Accepted part: {:?}", part);
                 accepted.push(part.clone());
             }
-            Action::Reject => {
-                // log::trace!("Rejected part: {:?}", part);
-            }
+            Action::Reject => {}
             Action::Send(_) => unreachable!(),
         }
     }
@@ -273,4 +347,20 @@ struct RangeSet {
     m: std::ops::Range<u64>,
     a: std::ops::Range<u64>,
     s: std::ops::Range<u64>,
+}
+
+impl RangeSet {
+    const EMPTY: Self = Self {
+        x: 0..0,
+        m: 0..0,
+        a: 0..0,
+        s: 0..0,
+    };
+
+    fn size(&self) -> u64 {
+        (self.x.end - self.x.start).max(0)
+            * (self.m.end - self.m.start).max(0)
+            * (self.a.end - self.a.start).max(0)
+            * (self.s.end - self.s.start).max(0)
+    }
 }
