@@ -61,42 +61,44 @@ Options:
 ## Latest Problem Runtimes
 
 ```log
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 01/part 1 took 0.1ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 01/part 2 took 0.13ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 02/part 1 took 0.04ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 02/part 2 took 0.04ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 03/part 1 took 0.1ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 03/part 2 took 0.07ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 04/part 1 took 0.11ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 04/part 2 took 0.11ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 05/part 1 took 0.02ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 05/part 2 took 0.07ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 06/part 1 took 0ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 06/part 2 took 0ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 07/part 1 took 0.09ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 07/part 2 took 0.09ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 08/part 1 took 0.16ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 08/part 2 took 0.36ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 09/part 1 took 0.3ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 09/part 2 took 0.3ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 10/part 1 took 0.3ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 10/part 2 took 0.32ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 11/part 1 took 0.13ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 11/part 2 took 0.08ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 12/part 1 took 0.31ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 12/part 2 took 0.91ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 13/part 1 took 0.1ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 13/part 2 took 0.1ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 14/part 1 took 0.02ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 14/part 2 took 4.82ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 15/part 1 took 0.05ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 15/part 2 took 0.31ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 16/part 1 took 0.19ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 16/part 2 took 6.2ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 17/part 1 took 4.5ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 17/part 2 took 7.45ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 18/part 1 took 0.06ms
-[2023-12-18T16:58:58Z DEBUG aoc2023] day 18/part 2 took 0.11ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 01/part 1 took 0.1ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 01/part 2 took 0.15ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 02/part 1 took 0.05ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 02/part 2 took 0.04ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 03/part 1 took 0.1ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 03/part 2 took 0.07ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 04/part 1 took 0.11ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 04/part 2 took 0.1ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 05/part 1 took 0.02ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 05/part 2 took 0.06ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 06/part 1 took 0ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 06/part 2 took 0ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 07/part 1 took 0.09ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 07/part 2 took 0.09ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 08/part 1 took 0.13ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 08/part 2 took 0.29ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 09/part 1 took 0.23ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 09/part 2 took 0.26ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 10/part 1 took 0.3ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 10/part 2 took 0.32ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 11/part 1 took 0.13ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 11/part 2 took 0.08ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 12/part 1 took 0.31ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 12/part 2 took 1ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 13/part 1 took 0.1ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 13/part 2 took 0.1ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 14/part 1 took 0.02ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 14/part 2 took 4.94ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 15/part 1 took 0.05ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 15/part 2 took 0.31ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 16/part 1 took 0.18ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 16/part 2 took 6.17ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 17/part 1 took 4.29ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 17/part 2 took 7.21ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 18/part 1 took 0.07ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 18/part 2 took 0.11ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 19/part 1 took 0.18ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] day 19/part 2 took 0.18ms
 
-[2023-12-18T16:58:58Z DEBUG aoc2023] Total duration: 28.222492ms
+[2023-12-19T12:17:53Z DEBUG aoc2023] Total duration: 28.139911ms
 ```
