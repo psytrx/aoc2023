@@ -32,34 +32,34 @@ fn push_button(
     let mut high_sent = 0;
 
     while let Some(signal) = signals.pop_front() {
-        // log::trace!("REC {}", signal);
-        let machine = machines
-            .get_mut(&signal.dst)
-            .ok_or_else(|| anyhow::anyhow!("Failed to find signal dst machine {}", signal.dst))?;
+        match machines.get_mut(&signal.dst) {
+            None => log::warn!("Failed to find dst machine {}", signal.dst),
+            Some(machine) => {
+                if let Some(out_pulse) = machine.process(&signal)? {
+                    let destinations = match machine {
+                        Machine::Broadcaster { destinations } => destinations,
+                        Machine::FlipFlop {
+                            state: _,
+                            destinations,
+                        } => destinations,
+                        Machine::Conjunction {
+                            state: _,
+                            destinations,
+                        } => destinations,
+                    };
 
-        if let Some(out_pulse) = machine.process(&signal)? {
-            let destinations = match machine {
-                Machine::Broadcaster { destinations } => destinations,
-                Machine::FlipFlop {
-                    state: _,
-                    destinations,
-                } => destinations,
-                Machine::Conjunction {
-                    state: _,
-                    destinations,
-                } => destinations,
-            };
+                    for dst in destinations {
+                        signals.push_back(Signal {
+                            src: signal.dst.clone(),
+                            dst: dst.clone(),
+                            pulse: out_pulse.clone(),
+                        });
 
-            for dst in destinations {
-                signals.push_back(Signal {
-                    src: signal.dst.clone(),
-                    dst: dst.clone(),
-                    pulse: out_pulse.clone(),
-                });
-
-                match out_pulse {
-                    Pulse::Low => low_sent += 1,
-                    Pulse::High => high_sent += 1,
+                        match out_pulse {
+                            Pulse::Low => low_sent += 1,
+                            Pulse::High => high_sent += 1,
+                        }
+                    }
                 }
             }
         }
@@ -120,18 +120,19 @@ fn parse_input(input: &str) -> anyhow::Result<hashbrown::hash_map::HashMap<Strin
         .collect::<anyhow::Result<hashbrown::hash_map::HashMap<_, _>>>()?;
 
     for (dst, inputs) in inputs.iter() {
-        let dst_machine = machines
-            .get_mut(dst)
-            .ok_or_else(|| anyhow::anyhow!("Failed to find dst machine {} in machines", dst))?;
-
-        if let Machine::Conjunction {
-            state,
-            destinations: _,
-        } = dst_machine
-        {
-            for src in inputs {
-                state.insert(src.clone(), Pulse::Low);
+        match machines.get_mut(dst) {
+            Some(dst_machine) => {
+                if let Machine::Conjunction {
+                    state,
+                    destinations: _,
+                } = dst_machine
+                {
+                    for src in inputs {
+                        state.insert(src.clone(), Pulse::Low);
+                    }
+                }
             }
+            None => log::warn!("Failed to find dst machine {}", dst),
         }
     }
 
