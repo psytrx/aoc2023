@@ -7,20 +7,23 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
         steps: 0,
     });
 
-    let max_steps = 16;
+    let max_steps = 64;
     let neighbor_pos = [(1, 0), (0, 1), (-1, 0), (0, -1)];
     let mut n_visited = 0;
+    let mut visited_map = hashbrown::hash_set::HashSet::new();
 
     while let Some(curr) = queue.pop_front() {
-        log::trace!("len: {}", queue.len());
         let (x, y) = curr.pos;
 
         let n = &mut grid[y as usize][x as usize];
 
-        if curr.steps == max_steps && !n.visited {
-            n.visited = true;
+        if visited_map.contains(&n.pos) {
+            continue;
+        }
+
+        if curr.steps % 2 == 0 {
+            visited_map.insert(n.pos);
             n_visited += 1;
-            break;
         }
 
         if curr.steps >= max_steps {
@@ -69,7 +72,6 @@ struct QueueNode {
 struct GridCell {
     pos: (i32, i32),
     kind: u8,
-    visited: bool,
 }
 
 type ParsedGrid = (Vec<Vec<GridCell>>, (i32, i32));
@@ -92,7 +94,6 @@ fn parse_input(input: &str) -> anyhow::Result<ParsedGrid> {
                     GridCell {
                         pos: (x as i32, y as i32),
                         kind: b,
-                        visited: false,
                     }
                 })
                 .collect()
