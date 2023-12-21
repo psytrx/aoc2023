@@ -33,7 +33,9 @@ fn push_button(
 
     while let Some(signal) = signals.pop_front() {
         match machines.get_mut(&signal.dst) {
-            None => log::warn!("Failed to find dst machine {}", signal.dst),
+            None => {
+                // log::warn!("Failed to find dst machine {}", signal.dst),
+            }
             Some(machine) => {
                 if let Some(out_pulse) = machine.process(&signal)? {
                     let destinations = match machine {
@@ -132,7 +134,9 @@ fn parse_input(input: &str) -> anyhow::Result<hashbrown::hash_map::HashMap<Strin
                     }
                 }
             }
-            None => log::warn!("Failed to find dst machine {}", dst),
+            None => {
+                // log::warn!("Failed to find dst machine {}", dst),
+            }
         }
     }
 
