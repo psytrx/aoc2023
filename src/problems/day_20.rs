@@ -123,18 +123,15 @@ fn parse_input(input: &str) -> anyhow::Result<hashbrown::hash_map::HashMap<Strin
 
     for (dst, inputs) in inputs.iter() {
         match machines.get_mut(dst) {
-            Some(dst_machine) => {
-                if let Machine::Conjunction {
-                    state,
-                    destinations: _,
-                } = dst_machine
-                {
-                    for src in inputs {
-                        state.insert(src.clone(), Pulse::Low);
-                    }
+            Some(Machine::Conjunction {
+                state,
+                destinations: _,
+            }) => {
+                for src in inputs {
+                    state.insert(src.clone(), Pulse::Low);
                 }
             }
-            None => {
+            _ => {
                 // log::warn!("Failed to find dst machine {}", dst),
             }
         }

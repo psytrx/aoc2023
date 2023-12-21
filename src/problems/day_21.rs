@@ -1,66 +1,57 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let (mut grid, start) = parse_input(input)?;
 
-    let mut queue = std::collections::VecDeque::new();
-    queue.push_back(QueueNode {
+    let mut queue = std::collections::VecDeque::from([QueueNode {
         pos: start,
         steps: 0,
-    });
+    }]);
 
     let max_steps = 64;
     let neighbor_pos = [(1, 0), (0, 1), (-1, 0), (0, -1)];
-    let mut n_visited = 0;
-    let mut visited_map = hashbrown::hash_set::HashSet::new();
 
     while let Some(curr) = queue.pop_front() {
         let (x, y) = curr.pos;
 
         let n = &mut grid[y as usize][x as usize];
-
-        if visited_map.contains(&n.pos) {
+        if n.visited > 0 {
             continue;
         }
-
-        if curr.steps % 2 == 0 {
-            visited_map.insert(n.pos);
-            n_visited += 1;
-        }
+        n.visited = curr.steps;
 
         if curr.steps >= max_steps {
             continue;
         }
 
-        let unqueued_neighbors = neighbor_pos.iter().filter_map(|(dx, dy)| {
+        for (dx, dy) in neighbor_pos {
             let (n_x, n_y) = (x + dx, y + dy);
             if n_y < 0
                 || n_y >= grid.len() as i32
                 || n_x < 0
                 || n_x >= grid[y as usize].len() as i32
             {
-                None
-            } else {
-                let n = &grid[n_y as usize][n_x as usize];
-                if n.kind == b'.' {
-                    Some(n)
-                } else {
-                    None
-                }
+                continue;
             }
-        });
 
-        for n in unqueued_neighbors {
-            queue.push_back(QueueNode {
-                pos: n.pos,
-                steps: curr.steps + 1,
-            });
+            let n = &grid[n_y as usize][n_x as usize];
+            if n.visited == 0 && n.kind == b'.' {
+                queue.push_back(QueueNode {
+                    pos: (n_x, n_y),
+                    steps: curr.steps + 1,
+                });
+            }
         }
     }
+
+    let n_visited = grid
+        .iter()
+        .flatten()
+        .filter(|n| n.visited > 0 && n.visited % 2 == 0)
+        .count();
 
     Ok(n_visited.to_string())
 }
 
-pub fn part_two(input: &str) -> anyhow::Result<String> {
-    let _grid = parse_input(input)?;
+pub fn part_two(_input: &str) -> anyhow::Result<String> {
     Ok("not implemented".to_string())
 }
 
@@ -70,8 +61,8 @@ struct QueueNode {
 }
 
 struct GridCell {
-    pos: (i32, i32),
     kind: u8,
+    visited: usize,
 }
 
 type ParsedGrid = (Vec<Vec<GridCell>>, (i32, i32));
@@ -92,8 +83,8 @@ fn parse_input(input: &str) -> anyhow::Result<ParsedGrid> {
                     }
                     let b = if b == b'#' { b'#' } else { b'.' };
                     GridCell {
-                        pos: (x as i32, y as i32),
                         kind: b,
+                        visited: 0,
                     }
                 })
                 .collect()
