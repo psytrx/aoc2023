@@ -1,38 +1,35 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let tower = compress_tower(parse_input(input)?);
-    // log::trace!("tower: {:?}", tower);
-
-    let display = tower
+    let result = tower
+        .nodes
         .iter()
-        .map(|col| col.iter().map(|(z, _)| z.to_string()).collect::<String>())
-        .collect::<Vec<_>>();
-    log::trace!("tower:\n{:#?}", display);
+        .filter(|node| {
+            node.outputs.iter().all(|&out_idx| {
+                let out_node = &tower.nodes[out_idx];
+                out_node.inputs.len() > 1
+            })
+        })
+        .count();
+    Ok(result.to_string())
+}
 
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    let tower = compress_tower(parse_input(input)?);
     // let bricks = collapse_tower(parse_input(input)?);
-    //
-    // let removable_bricks = bricks.iter().filter(|brick| {
-    //     is_supporting(brick, &bricks)
-    //         .iter()
-    //         .all(|supported| supported_by(supported, &bricks).len() > 1)
-    // });
-
     let result = -1;
     Ok(result.to_string())
 }
 
-fn compress_tower(mut bricks: Vec<Brick>) -> Vec<Vec<(usize, Option<usize>)>> {
+fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
     bricks.sort_by_key(|brick| *brick.z.start());
 
-    let mut grid = {
-        let (dim_x, dim_y) = bricks.iter().fold((0, 0), |(x, y), brick| {
-            (x.max(*brick.x.end() + 1), y.max(*brick.y.end() + 1))
-        });
-        vec![vec![(0, None); dim_x]; dim_y]
-    };
+    let (dim_x, dim_y) = bricks.iter().fold((0, 0), |(x, y), brick| {
+        (x.max(*brick.x.end() + 1), y.max(*brick.y.end() + 1))
+    });
+    let mut grid: Vec<Vec<(usize, Option<usize>)>> = vec![vec![(0, None); dim_y]; dim_x];
+    let mut edges = hashbrown::HashSet::new();
 
-    let mut supports = hashbrown::HashSet::new();
-
-    for brick in bricks.iter_mut() {
+    for (brick_idx, brick) in bricks.iter_mut().enumerate() {
         let mut max_z = 0;
 
         // Find the current max z
@@ -46,78 +43,52 @@ fn compress_tower(mut bricks: Vec<Brick>) -> Vec<Vec<(usize, Option<usize>)>> {
         // Update z, and store top brick ID
         for x in brick.x.clone() {
             for y in brick.y.clone() {
-                let (z, upper_brick) = grid[x][y];
+                let (z, upper_brick_idx) = grid[x][y];
 
                 if z == max_z {
                     // Current brick is directly supported by upper_brick
-                    if let Some(upper_brick) = upper_brick {
-                        supports.insert((upper_brick, brick.id));
+                    if let Some(upper_brick_idx) = upper_brick_idx {
+                        edges.insert((upper_brick_idx, brick_idx));
                     }
                 }
 
-                grid[x][y] = (max_z + 1, Some(brick.id));
+                let brick_height = brick.z.end() - brick.z.start() + 1;
+                grid[x][y] = (max_z + brick_height, Some(brick_idx));
             }
         }
     }
 
-    log::trace!("supports: {:?}", supports);
+    let nodes = bricks
+        .iter()
+        .enumerate()
+        .map(|(brick_idx, _)| {
+            let inputs = edges
+                .iter()
+                .filter(|(_, to)| *to == brick_idx)
+                .map(|(from, _)| *from)
+                .collect();
+            let outputs = edges
+                .iter()
+                .filter(|(from, _)| *from == brick_idx)
+                .map(|(_, to)| *to)
+                .collect();
+            TowerNode { inputs, outputs }
+        })
+        .collect();
 
-    grid
+    CompressedTower { grid, edges, nodes }
 }
 
-pub fn part_two(input: &str) -> anyhow::Result<String> {
-    let tower = compress_tower(parse_input(input)?);
-    // let bricks = collapse_tower(parse_input(input)?);
-    let result = -1;
-    Ok(result.to_string())
+struct CompressedTower {
+    grid: Vec<Vec<(usize, Option<usize>)>>,
+    edges: hashbrown::HashSet<(usize, usize)>,
+    nodes: Vec<TowerNode>,
 }
 
-// fn is_supporting(brick: &Brick, bricks: &[Brick]) -> Vec<Brick> {
-//     bricks
-//         .iter()
-//         .filter(|other| other.is_supported_by(brick))
-//         .map(|brick| brick.to_owned())
-//         .collect()
-// }
-
-// fn supported_by(brick: &Brick, bricks: &[Brick]) -> Vec<Brick> {
-//     bricks
-//         .iter()
-//         .filter(|other| brick.is_supported_by(other))
-//         .map(|brick| brick.to_owned())
-//         .collect()
-// }
-
-// fn collapse_tower(mut bricks: Vec<Brick>) -> Vec<Brick> {
-//     let mut dropped = true;
-//     while dropped {
-//         dropped = false;
-//         bricks = bricks
-//             .iter()
-//             .map(|brick| {
-//                 // Idea: If we could sort the bricks by z,
-//                 // we can reduce complexity from O(n^2) to O(n log n)
-//                 let can_drop =
-//                     brick.z.lo > 1 && !bricks.iter().any(|other| brick.is_supported_by(other));
-//                 if can_drop {
-//                     dropped = true;
-//                     // log::debug!("dropping brick: {:?}", brick);
-//
-//                     let new_z = Range::new(brick.z.lo - 1, brick.z.hi - 1);
-//                     Brick {
-//                         id: brick.id.to_owned(),
-//                         x: brick.x.to_owned(),
-//                         y: brick.y.to_owned(),
-//                         z: new_z,
-//                     }
-//                 } else {
-//                     brick.to_owned()
-//                 }
-//             })
-//             .collect();
-//     }
-//     bricks
-// }
+struct TowerNode {
+    inputs: Vec<usize>,
+    outputs: Vec<usize>,
+}
 
 fn parse_input(input: &str) -> anyhow::Result<Vec<Brick>> {
     input
@@ -132,7 +103,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Brick>> {
             let (to_x, to_y, to_z) = parse_coordinates(to)?;
 
             Ok(Brick {
-                id: i,
+                i,
                 x: from_x..=to_x,
                 y: from_y..=to_y,
                 z: from_z..=to_z,
@@ -143,7 +114,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Brick>> {
 
 #[derive(Clone)]
 struct Brick {
-    id: usize,
+    i: usize,
     x: std::ops::RangeInclusive<usize>,
     y: std::ops::RangeInclusive<usize>,
     z: std::ops::RangeInclusive<usize>,
