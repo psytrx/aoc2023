@@ -19,8 +19,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     let result = tower
         .nodes
         .iter()
-        .enumerate()
-        .map(|(_, node)| {
+        .map(|node| {
             let mut queue = std::collections::VecDeque::from([node]);
             let mut removed = hashbrown::HashSet::new();
 
@@ -31,12 +30,11 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
 
                 for &out_idx in &node.outputs {
                     let out_node = &tower.nodes[out_idx];
-                    let remaining_inputs = out_node
+                    if out_node
                         .inputs
                         .iter()
-                        .filter(|&&in_idx| !removed.contains(&in_idx))
-                        .count();
-                    if remaining_inputs == 0 {
+                        .all(|&in_idx| removed.contains(&in_idx))
+                    {
                         queue.push_back(out_node);
                     }
                 }
@@ -57,7 +55,7 @@ fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
     let mut grid: Vec<Vec<(usize, Option<usize>)>> = vec![vec![(0, None); dim_y]; dim_x];
     let mut edges = hashbrown::HashSet::new();
 
-    for (brick_idx, brick) in bricks.iter_mut().enumerate() {
+    for brick in bricks.iter_mut() {
         let mut max_z = 0;
         let brick_height = brick.z.end() - brick.z.start() + 1;
 
@@ -77,11 +75,11 @@ fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
                 if z == max_z {
                     // Current brick is directly supported by upper_brick
                     if let Some(upper_brick_idx) = upper_brick_idx {
-                        edges.insert((upper_brick_idx, brick_idx));
+                        edges.insert((upper_brick_idx, brick.idx));
                     }
                 }
 
-                grid[x][y] = (max_z + brick_height, Some(brick_idx));
+                grid[x][y] = (max_z + brick_height, Some(brick.idx));
             }
         }
     }
@@ -92,13 +90,23 @@ fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
         .map(|(brick_idx, _)| {
             let inputs = edges
                 .iter()
-                .filter(|(_, to)| *to == brick_idx)
-                .map(|(from, _)| *from)
+                .filter_map(|&(from_idx, to_idx)| {
+                    if to_idx == brick_idx {
+                        Some(from_idx)
+                    } else {
+                        None
+                    }
+                })
                 .collect();
             let outputs = edges
                 .iter()
-                .filter(|(from, _)| *from == brick_idx)
-                .map(|(_, to)| *to)
+                .filter_map(|&(from_idx, to_idx)| {
+                    if from_idx == brick_idx {
+                        Some(to_idx)
+                    } else {
+                        None
+                    }
+                })
                 .collect();
             TowerNode {
                 idx: brick_idx,
@@ -108,12 +116,10 @@ fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
         })
         .collect();
 
-    CompressedTower { grid, edges, nodes }
+    CompressedTower { nodes }
 }
 
 struct CompressedTower {
-    grid: Vec<Vec<(usize, Option<usize>)>>,
-    edges: hashbrown::HashSet<(usize, usize)>,
     nodes: Vec<TowerNode>,
 }
 
@@ -127,7 +133,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Brick>> {
     input
         .lines()
         .enumerate()
-        .map(|(i, line)| {
+        .map(|(idx, line)| {
             let (from, to) = line
                 .split_once('~')
                 .ok_or_else(|| anyhow::anyhow!("Failed to split line into from/to"))?;
@@ -136,7 +142,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Brick>> {
             let (to_x, to_y, to_z) = parse_coordinates(to)?;
 
             Ok(Brick {
-                idx: i,
+                idx,
                 x: from_x..=to_x,
                 y: from_y..=to_y,
                 z: from_z..=to_z,
