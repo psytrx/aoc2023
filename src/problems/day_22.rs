@@ -10,13 +10,41 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
             })
         })
         .count();
+
     Ok(result.to_string())
 }
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
     let tower = compress_tower(parse_input(input)?);
-    // let bricks = collapse_tower(parse_input(input)?);
-    let result = -1;
+    let result = tower
+        .nodes
+        .iter()
+        .enumerate()
+        .map(|(_, node)| {
+            let mut queue = std::collections::VecDeque::from([node]);
+            let mut removed = hashbrown::HashSet::new();
+
+            while let Some(node) = queue.pop_front() {
+                if !removed.insert(node.idx) {
+                    continue;
+                }
+
+                for &out_idx in &node.outputs {
+                    let out_node = &tower.nodes[out_idx];
+                    let remaining_inputs = out_node
+                        .inputs
+                        .iter()
+                        .filter(|&&in_idx| !removed.contains(&in_idx))
+                        .count();
+                    if remaining_inputs == 0 {
+                        queue.push_back(out_node);
+                    }
+                }
+            }
+
+            removed.len() - 1
+        })
+        .sum::<usize>();
     Ok(result.to_string())
 }
 
@@ -31,6 +59,7 @@ fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
 
     for (brick_idx, brick) in bricks.iter_mut().enumerate() {
         let mut max_z = 0;
+        let brick_height = brick.z.end() - brick.z.start() + 1;
 
         // Find the current max z
         for x in brick.x.clone() {
@@ -52,7 +81,6 @@ fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
                     }
                 }
 
-                let brick_height = brick.z.end() - brick.z.start() + 1;
                 grid[x][y] = (max_z + brick_height, Some(brick_idx));
             }
         }
@@ -72,7 +100,11 @@ fn compress_tower(mut bricks: Vec<Brick>) -> CompressedTower {
                 .filter(|(from, _)| *from == brick_idx)
                 .map(|(_, to)| *to)
                 .collect();
-            TowerNode { inputs, outputs }
+            TowerNode {
+                idx: brick_idx,
+                inputs,
+                outputs,
+            }
         })
         .collect();
 
@@ -86,6 +118,7 @@ struct CompressedTower {
 }
 
 struct TowerNode {
+    idx: usize,
     inputs: Vec<usize>,
     outputs: Vec<usize>,
 }
@@ -103,7 +136,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Brick>> {
             let (to_x, to_y, to_z) = parse_coordinates(to)?;
 
             Ok(Brick {
-                i,
+                idx: i,
                 x: from_x..=to_x,
                 y: from_y..=to_y,
                 z: from_z..=to_z,
@@ -114,7 +147,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Brick>> {
 
 #[derive(Clone)]
 struct Brick {
-    i: usize,
+    idx: usize,
     x: std::ops::RangeInclusive<usize>,
     y: std::ops::RangeInclusive<usize>,
     z: std::ops::RangeInclusive<usize>,
