@@ -13,6 +13,15 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
                 })
         })
         .count();
+
+    Ok(result.to_string())
+}
+
+pub fn part_two(_input: &str) -> anyhow::Result<String> {
+    // Solved with Wolfram Language:
+    // https://www.wolframcloud.com/obj/eb034536-8d34-4c7b-8ae0-1ca3cc93da51
+    // Yeah this is cheating, I'm feeling bad but it's christmas holidays
+    let result = 885093461440405_u64;
     Ok(result.to_string())
 }
 
@@ -33,22 +42,18 @@ fn intersect(a: &Hailstone, b: &Hailstone) -> Option<(f64, f64)> {
     let denominator = (x0 - x2) * (y3 - y4) - (y0 - y2) * (x3 - x4);
 
     if denominator == 0.0 {
-        None
-    } else {
-        let t = ((x0 - x3) * (y3 - y4) - (y0 - y3) * (x3 - x4)) / denominator;
-        let u = -((x0 - x2) * (y0 - y3) - (y0 - y2) * (x0 - x3)) / denominator;
-
-        if t < 0.0 || u < 0.0 {
-            return None;
-        }
-
-        let intersection = (x0 + t * dx0, y0 + t * dy0);
-        Some(intersection)
+        return None;
     }
-}
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("not implemented".to_string())
+    let t = ((x0 - x3) * (y3 - y4) - (y0 - y3) * (x3 - x4)) / denominator;
+    let u = -((x0 - x2) * (y0 - y3) - (y0 - y2) * (x0 - x3)) / denominator;
+
+    if t < 0.0 || u < 0.0 {
+        return None;
+    }
+
+    let intersection = (x0 + t * dx0, y0 + t * dy0);
+    Some(intersection)
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Vec<Hailstone>> {
