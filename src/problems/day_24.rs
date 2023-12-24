@@ -1,6 +1,50 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let hailstones = parse_input(input)?;
-    Ok("not implemented".to_string())
+    let (min, max) = (200000000000000.0, 400000000000000.0);
+    let result = hailstones
+        .iter()
+        .enumerate()
+        .flat_map(|(i, a)| {
+            hailstones[i + 1..]
+                .iter()
+                .filter(|b| match intersect(a, b) {
+                    Some((x, y)) => x >= min && x <= max && y >= min && y <= max,
+                    None => false,
+                })
+        })
+        .count();
+    Ok(result.to_string())
+}
+
+fn intersect(a: &Hailstone, b: &Hailstone) -> Option<(f64, f64)> {
+    let (x0, y0, _) = a.pos;
+    let (dx0, dy0, _) = a.dir;
+    let (x1, y1, _) = b.pos;
+    let (dx1, dy1, _) = b.dir;
+
+    let x2 = x0 + dx0;
+    let x3 = x1;
+    let x4 = x1 + dx1;
+
+    let y2 = y0 + dy0;
+    let y3 = y1;
+    let y4 = y1 + dy1;
+
+    let denominator = (x0 - x2) * (y3 - y4) - (y0 - y2) * (x3 - x4);
+
+    if denominator == 0.0 {
+        None
+    } else {
+        let t = ((x0 - x3) * (y3 - y4) - (y0 - y3) * (x3 - x4)) / denominator;
+        let u = -((x0 - x2) * (y0 - y3) - (y0 - y2) * (x0 - x3)) / denominator;
+
+        if t < 0.0 || u < 0.0 {
+            return None;
+        }
+
+        let intersection = (x0 + t * dx0, y0 + t * dy0);
+        Some(intersection)
+    }
 }
 
 pub fn part_two(_input: &str) -> anyhow::Result<String> {
@@ -20,7 +64,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Hailstone>> {
                     .split(", ")
                     .map(|s| {
                         s.trim()
-                            .parse::<i64>()
+                            .parse::<f64>()
                             .map_err(|e| anyhow::anyhow!("Failed to parse position '{}': {}", s, e))
                     })
                     .collect::<anyhow::Result<Vec<_>>>()?;
@@ -34,7 +78,7 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Hailstone>> {
                 let dir = dir
                     .split(", ")
                     .map(|s| {
-                        s.trim().parse::<i64>().map_err(|e| {
+                        s.trim().parse::<f64>().map_err(|e| {
                             anyhow::anyhow!("Failed to parse direction '{}': {}", s, e)
                         })
                     })
@@ -50,7 +94,8 @@ fn parse_input(input: &str) -> anyhow::Result<Vec<Hailstone>> {
         .collect::<anyhow::Result<_>>()
 }
 
+#[derive(Debug)]
 struct Hailstone {
-    pos: (i64, i64, i64),
-    dir: (i64, i64, i64),
+    pos: (f64, f64, f64),
+    dir: (f64, f64, f64),
 }
