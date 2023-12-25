@@ -14,15 +14,52 @@ fn collapse(g: &mut Graph) {
         // Find 2 neighboring nodes that have
         // more than 3 _unique_ paths between each other
 
+        let mut merge = vec![];
+
         for (a_id, a) in g.nodes.iter() {
             if a.edges.len() <= 3 {
                 continue;
             }
 
             for e in a.edges.iter() {
-                let b_id = e.other(&a_id);
+                let b_id = e.other(a_id);
                 let b = &g.nodes[b_id];
+
+                if b.edges.len() <= 3 {
+                    continue;
+                }
+
+                let mut exclude = hashbrown::HashSet::new();
+                exclude.insert(e.to_owned());
+
+                let mut found_paths = true;
+                for _ in 1..=3 {
+                    match find_path(g, a_id, b_id, &exclude) {
+                        Some(path) => {
+                            for e in path {
+                                exclude.insert(e.to_owned());
+                            }
+                        }
+                        None => {
+                            found_paths = false;
+                            break;
+                        }
+                    }
+                }
+
+                if !found_paths {
+                    continue;
+                }
+
+                merge.push((a_id, b_id.to_owned()));
+
+                break; // Can we just continue instead of break?
             }
+        }
+
+        for (a_id, b_id) in merge.iter() {
+            // Merge b into a
+            // let a = g.nodes.get_mut(&a_id);
         }
     }
 }
