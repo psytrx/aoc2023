@@ -9,14 +9,15 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     Ok("not implemented".to_string())
 }
 
-fn collapse(g: &mut Graph) {
+fn collapse(g: &mut Graph) -> anyhow::Result<()> {
     while g.nodes.len() > 2 {
         // Find 2 neighboring nodes that have
         // more than 3 _unique_ paths between each other
 
         let mut merge = vec![];
 
-        for (a_id, a) in g.nodes.iter() {
+        let nodes = g.nodes.clone();
+        for (a_id, a) in nodes.iter() {
             if a.edges.len() <= 3 {
                 continue;
             }
@@ -51,17 +52,17 @@ fn collapse(g: &mut Graph) {
                     continue;
                 }
 
-                merge.push((a_id, b_id.to_owned()));
-
-                break; // Can we just continue instead of break?
+                merge.push((a_id.to_owned(), b_id.to_owned()));
+                break;
             }
         }
 
         for (a_id, b_id) in merge.iter() {
-            // Merge b into a
-            // let a = g.nodes.get_mut(&a_id);
+            g.merge(a_id, b_id)?;
         }
     }
+
+    Ok(())
 }
 
 fn find_path(
@@ -132,6 +133,12 @@ fn parse_input(input: &str) -> anyhow::Result<Graph> {
 
 struct Graph {
     nodes: hashbrown::HashMap<String, Node>,
+}
+
+impl Graph {
+    fn merge(&mut self, a_id: &str, b_id: &str) -> anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Clone)]
