@@ -11,8 +11,19 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
 
 fn collapse(g: &mut Graph) {
     while g.nodes.len() > 2 {
-        // Find 2 neighboring nodes that each have > 3 edges,
-        // and that have more than 3 _unique_ paths between each other.
+        // Find 2 neighboring nodes that have
+        // more than 3 _unique_ paths between each other
+
+        for (a_id, a) in g.nodes.iter() {
+            if a.edges.len() <= 3 {
+                continue;
+            }
+
+            for e in a.edges.iter() {
+                let b_id = e.other(&a_id);
+                let b = &g.nodes[b_id];
+            }
+        }
     }
 }
 
