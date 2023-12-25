@@ -23,8 +23,16 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
             }
 
             for a_b_edge in a.edges.iter() {
+                log::trace!("a_b_edge: {:?}", a_b_edge);
+
                 let b_id = a_b_edge.other(a_id);
-                let b = &g.nodes[b_id];
+                let b = match g.nodes.get(b_id) {
+                    Some(b) => b,
+                    None => {
+                        log::trace!("Failed to find node b '{}'", b_id);
+                        continue;
+                    }
+                };
 
                 if b.edges.len() <= 3 {
                     continue;
@@ -58,14 +66,23 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
         }
 
         for edge in merge.iter() {
-            let a = g
-                .nodes
-                .remove(&edge.a)
-                .ok_or_else(|| anyhow::anyhow!("Failed to find node a '{}'", edge.a))?;
-            let b = g
-                .nodes
-                .remove(&edge.b)
-                .ok_or_else(|| anyhow::anyhow!("Failed to find node b '{}'", edge.b))?;
+            log::trace!("merging {:?}", edge);
+
+            let a = match g.nodes.remove(&edge.a) {
+                Some(a) => a,
+                None => {
+                    log::trace!("Failed to find node a '{}'", edge.a);
+                    continue;
+                }
+            };
+
+            let b = match g.nodes.remove(&edge.b) {
+                Some(b) => b,
+                None => {
+                    log::trace!("Failed to find node b '{}'", edge.b);
+                    continue;
+                }
+            };
 
             let merged = Node {
                 id: format!("{},{}", edge.a, edge.b),
@@ -79,7 +96,41 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
 
             g.nodes.insert(merged.id.to_string(), merged.clone());
 
-            for b_edge in b.edges.iter() {}
+            for a_edge in a.edges.iter() {
+                log::trace!("a_edge: {:?}", a_edge);
+                let other_id = a_edge.other(&a.id);
+                let other = g.nodes.get_mut(other_id);
+                if let Some(other) = other {
+                    other.edges = other
+                        .edges
+                        .iter()
+                        .filter(|e| e.a != a.id && e.b != a.id)
+                        .cloned()
+                        .collect();
+                    other.edges.insert(Edge {
+                        a: other.id.to_owned(),
+                        b: merged.id.to_owned(),
+                    });
+                }
+            }
+
+            for b_edge in b.edges.iter() {
+                log::trace!("b_edge: {:?}", b_edge);
+                let other_id = b_edge.other(&b.id);
+                let other = g.nodes.get_mut(other_id);
+                if let Some(other) = other {
+                    other.edges = other
+                        .edges
+                        .iter()
+                        .filter(|e| e.a != b.id && e.b != b.id)
+                        .cloned()
+                        .collect();
+                    other.edges.insert(Edge {
+                        a: other.id.to_owned(),
+                        b: merged.id.to_owned(),
+                    });
+                }
+            }
         }
     }
 
@@ -102,7 +153,10 @@ fn find_path(
 
         visited.insert(node_id);
 
-        let node = &g.nodes[node_id];
+        let node = match g.nodes.get(node_id) {
+            Some(node) => node,
+            None => continue,
+        };
         let edges = node.edges.iter().filter(|&edge| {
             let neighbor_id = edge.other(node_id);
             !visited.contains(neighbor_id) && !exclude.contains(edge)
