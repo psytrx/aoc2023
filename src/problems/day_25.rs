@@ -10,9 +10,39 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
 }
 
 fn collapse(g: &mut Graph) {
-    // while g.nodes.len() > 2 {
-    //     break;
-    // }
+    while g.nodes.len() > 2 {
+        for (a_id, a) in g.nodes.iter() {
+            if a.edges.len() <= 3 {
+                continue;
+            }
+
+            for edge in a.edges.iter() {
+                let b_id = if &edge.a == a_id { &edge.b } else { &edge.a };
+                let b = &g.nodes[b_id];
+                if b.edges.len() <= 3 {
+                    continue;
+                }
+
+                let mut validated = hashbrown::HashSet::new();
+                validated.insert(edge);
+
+                match find_path(g, a, b, &validated) {
+                    _ => unreachable!(),
+                }
+            }
+        }
+
+        break;
+    }
+}
+
+fn find_path(
+    g: &Graph,
+    a: &Node,
+    b: &Node,
+    exclude: &hashbrown::HashSet<&Edge>,
+) -> Option<Vec<Edge>> {
+    None
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Graph> {
