@@ -1,16 +1,20 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    let _g = parse_input(input);
+    let mut g = parse_input(input)?;
+    collapse(&mut g);
     Ok("not implemented".to_string())
 }
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
-    let _g = parse_input(input);
+    let _g = parse_input(input)?;
     Ok("not implemented".to_string())
 }
 
+fn collapse(g: &mut Graph) {
+    while g.nodes.len() > 2 {}
+}
+
 fn parse_input(input: &str) -> anyhow::Result<Graph> {
-    let mut nodes = hashbrown::HashSet::new();
-    let mut edges = hashbrown::HashSet::new();
+    let mut nodes = hashbrown::HashMap::new();
 
     for line in input.lines() {
         let (first, rest) = line
@@ -23,18 +27,37 @@ fn parse_input(input: &str) -> anyhow::Result<Graph> {
         }
 
         for a in connected_nodes.iter() {
-            nodes.insert(a.to_string());
+            let entry = nodes
+                .entry(a.to_string())
+                .or_insert_with(|| Node { edges: vec![] });
             for b in connected_nodes.iter() {
-                edges.insert((a.to_string(), b.to_string()));
-                edges.insert((b.to_string(), a.to_string()));
+                entry.edges.push(Edge {
+                    a: a.to_string(),
+                    b: b.to_string(),
+                });
             }
         }
     }
 
-    Ok(Graph { nodes, edges })
+    Ok(Graph { nodes })
 }
 
 struct Graph {
-    nodes: hashbrown::HashSet<String>,
-    edges: hashbrown::HashSet<(String, String)>,
+    nodes: hashbrown::HashMap<String, Node>,
+}
+
+struct Node {
+    edges: Vec<Edge>,
+}
+
+#[derive(Eq)]
+struct Edge {
+    a: String,
+    b: String,
+}
+
+impl std::cmp::PartialEq for Edge {
+    fn eq(&self, other: &Self) -> bool {
+        (self.a == other.a && self.b == other.b) || (self.a == other.b && self.b == other.a)
+    }
 }
