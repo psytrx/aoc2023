@@ -137,6 +137,42 @@ struct Graph {
 
 impl Graph {
     fn merge(&mut self, a_id: &str, b_id: &str) -> anyhow::Result<()> {
+        let a = self
+            .nodes
+            .remove(a_id)
+            .ok_or_else(|| anyhow::anyhow!("Failed to find node {}", a_id))?;
+
+        let b = self
+            .nodes
+            .remove(b_id)
+            .ok_or_else(|| anyhow::anyhow!("Failed to find node {}", b_id))?;
+
+        let merged_id = format!("{},{}", a_id, b_id);
+        let merged_edges = a
+            .edges
+            .iter()
+            .map(|edge| {
+                let other = edge.other(a_id);
+                Edge {
+                    a: merged_id.clone(),
+                    b: other.to_string(),
+                }
+            })
+            .chain(b.edges.iter().map(|edge| {
+                let other = edge.other(b_id);
+                Edge {
+                    a: merged_id.clone(),
+                    b: other.to_string(),
+                }
+            }))
+            .collect();
+        let merged = Node {
+            id: merged_id.clone(),
+            edges: merged_edges,
+        };
+
+        self.nodes.insert(merged_id, merged);
+
         Ok(())
     }
 }
