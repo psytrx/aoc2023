@@ -11,37 +11,86 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
 
 fn collapse(g: &mut Graph) {
     while g.nodes.len() > 2 {
-        for (a_id, a) in g.nodes.iter() {
+        let nodes = g.nodes.clone();
+        for (a_id, a) in nodes.iter() {
             if a.edges.len() <= 3 {
                 continue;
             }
 
+            let mut was_merged = false;
+
             for edge in a.edges.iter() {
-                let b_id = if &edge.a == a_id { &edge.b } else { &edge.a };
-                let b = &g.nodes[b_id];
+                let b_id = edge.other(a_id);
+                let b = g.nodes[b_id].clone();
                 if b.edges.len() <= 3 {
                     continue;
                 }
 
-                let mut validated = hashbrown::HashSet::new();
-                validated.insert(edge);
+                let mut exclude = hashbrown::HashSet::from([edge.to_owned()]);
+                let mut found = true;
 
-                match find_path(g, a, b, &validated) {
-                    _ => unreachable!(),
+                for _ in 1..=3 {
+                    match find_path(g, a_id, b_id, &exclude) {
+                        Some(edges) => {
+                            for edge in edges.iter() {
+                                exclude.insert(edge.to_owned());
+                            }
+                        }
+                        None => {
+                            found = false;
+                            break;
+                        }
+                    }
                 }
+
+                if !found {
+                    continue;
+                }
+
+                // merge a and b
+                log::warn!("Merging {} and {}", a_id, b_id);
+                was_merged = true;
+            }
+
+            if was_merged {
+                continue;
             }
         }
-
-        break;
     }
 }
 
 fn find_path(
     g: &Graph,
-    a: &Node,
-    b: &Node,
-    exclude: &hashbrown::HashSet<&Edge>,
+    start_id: &str,
+    end_id: &str,
+    exclude: &hashbrown::HashSet<Edge>,
 ) -> Option<Vec<Edge>> {
+    let mut heap = std::collections::BinaryHeap::from([(std::cmp::Reverse(0), start_id, vec![])]);
+    let mut visited: hashbrown::HashSet<&str> = hashbrown::HashSet::from([start_id]);
+
+    while let Some((std::cmp::Reverse(dist), node_id, path)) = heap.pop() {
+        if node_id == end_id {
+            return Some(path);
+        }
+
+        visited.insert(node_id);
+
+        let node = &g.nodes[node_id];
+        let edges = node.edges.iter().filter(|&edge| {
+            let neighbor_id = edge.other(node_id);
+            !visited.contains(neighbor_id) && !exclude.contains(edge)
+        });
+
+        for edge in edges {
+            let new_dist = dist + 1;
+            let new_node_id = edge.other(node_id);
+            let mut new_path = path.clone();
+            new_path.push(edge.clone());
+
+            heap.push((std::cmp::Reverse(new_dist), new_node_id, new_path));
+        }
+    }
+
     None
 }
 
@@ -80,15 +129,26 @@ struct Graph {
     nodes: hashbrown::HashMap<String, Node>,
 }
 
+#[derive(Clone)]
 struct Node {
     id: String,
     edges: hashbrown::HashSet<Edge>,
 }
 
-#[derive(Eq, Clone)]
+#[derive(Eq, Clone, PartialOrd, Ord, Debug)]
 struct Edge {
     a: String,
     b: String,
+}
+
+impl Edge {
+    fn other(&self, id: &str) -> &str {
+        if self.a == id {
+            &self.b
+        } else {
+            &self.a
+        }
+    }
 }
 
 impl std::cmp::PartialEq for Edge {
