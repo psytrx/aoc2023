@@ -11,51 +11,8 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
 
 fn collapse(g: &mut Graph) {
     while g.nodes.len() > 2 {
-        let nodes = g.nodes.clone();
-        for (a_id, a) in nodes.iter() {
-            if a.edges.len() <= 3 {
-                continue;
-            }
-
-            let mut was_merged = false;
-
-            for edge in a.edges.iter() {
-                let b_id = edge.other(a_id);
-                let b = g.nodes[b_id].clone();
-                if b.edges.len() <= 3 {
-                    continue;
-                }
-
-                let mut exclude = hashbrown::HashSet::from([edge.to_owned()]);
-                let mut found = true;
-
-                for _ in 1..=3 {
-                    match find_path(g, a_id, b_id, &exclude) {
-                        Some(edges) => {
-                            for edge in edges.iter() {
-                                exclude.insert(edge.to_owned());
-                            }
-                        }
-                        None => {
-                            found = false;
-                            break;
-                        }
-                    }
-                }
-
-                if !found {
-                    continue;
-                }
-
-                // merge a and b
-                log::warn!("Merging {} and {}", a_id, b_id);
-                was_merged = true;
-            }
-
-            if was_merged {
-                continue;
-            }
-        }
+        // Find 2 neighboring nodes that each have > 3 edges,
+        // and that have more than 3 _unique_ paths between each other.
     }
 }
 
