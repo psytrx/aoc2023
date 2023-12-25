@@ -10,32 +10,36 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
 }
 
 fn collapse(g: &mut Graph) {
-    while g.nodes.len() > 2 {}
+    // while g.nodes.len() > 2 {
+    //     break;
+    // }
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Graph> {
     let mut nodes = hashbrown::HashMap::new();
 
     for line in input.lines() {
-        let (first, rest) = line
+        let (from_id, rest) = line
             .split_once(": ")
             .ok_or_else(|| anyhow::anyhow!("Failed to split line at :"))?;
 
-        let mut connected_nodes = vec![first];
-        for n in rest.split(' ') {
-            connected_nodes.push(n);
-        }
+        for to_id in rest.split(' ') {
+            let edge = Edge {
+                a: from_id.to_owned(),
+                b: to_id.to_owned(),
+            };
 
-        for a in connected_nodes.iter() {
-            let entry = nodes
-                .entry(a.to_string())
-                .or_insert_with(|| Node { edges: vec![] });
-            for b in connected_nodes.iter() {
-                entry.edges.push(Edge {
-                    a: a.to_string(),
-                    b: b.to_string(),
-                });
-            }
+            let from = nodes.entry(from_id.to_string()).or_insert_with(|| Node {
+                id: from_id.to_string(),
+                edges: hashbrown::HashSet::new(),
+            });
+            from.edges.insert(edge.clone());
+
+            let to = nodes.entry(to_id.to_string()).or_insert_with(|| Node {
+                id: to_id.to_string(),
+                edges: hashbrown::HashSet::new(),
+            });
+            to.edges.insert(edge);
         }
     }
 
@@ -47,10 +51,11 @@ struct Graph {
 }
 
 struct Node {
-    edges: Vec<Edge>,
+    id: String,
+    edges: hashbrown::HashSet<Edge>,
 }
 
-#[derive(Eq)]
+#[derive(Eq, Clone)]
 struct Edge {
     a: String,
     b: String,
@@ -59,5 +64,18 @@ struct Edge {
 impl std::cmp::PartialEq for Edge {
     fn eq(&self, other: &Self) -> bool {
         (self.a == other.a && self.b == other.b) || (self.a == other.b && self.b == other.a)
+    }
+}
+
+impl std::hash::Hash for Edge {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let (a, b) = if self.a <= self.b {
+            (&self.a, &self.b)
+        } else {
+            (&self.b, &self.a)
+        };
+
+        a.hash(state);
+        b.hash(state);
     }
 }
