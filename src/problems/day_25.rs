@@ -1,6 +1,6 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let mut g = parse_input(input)?;
-    collapse(&mut g);
+    collapse(&mut g)?;
     Ok("not implemented".to_string())
 }
 
@@ -22,8 +22,8 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
                 continue;
             }
 
-            for e in a.edges.iter() {
-                let b_id = e.other(a_id);
+            for a_b_edge in a.edges.iter() {
+                let b_id = a_b_edge.other(a_id);
                 let b = &g.nodes[b_id];
 
                 if b.edges.len() <= 3 {
@@ -31,7 +31,7 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
                 }
 
                 let mut exclude = hashbrown::HashSet::new();
-                exclude.insert(e.to_owned());
+                exclude.insert(a_b_edge.to_owned());
 
                 let mut found_paths = true;
                 for _ in 1..=3 {
@@ -52,13 +52,34 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
                     continue;
                 }
 
-                merge.push((a_id.to_owned(), b_id.to_owned()));
+                merge.push(a_b_edge.to_owned());
                 break;
             }
         }
 
-        for (a_id, b_id) in merge.iter() {
-            g.merge(a_id, b_id)?;
+        for edge in merge.iter() {
+            let a = g
+                .nodes
+                .remove(&edge.a)
+                .ok_or_else(|| anyhow::anyhow!("Failed to find node a '{}'", edge.a))?;
+            let b = g
+                .nodes
+                .remove(&edge.b)
+                .ok_or_else(|| anyhow::anyhow!("Failed to find node b '{}'", edge.b))?;
+
+            let merged = Node {
+                id: format!("{},{}", edge.a, edge.b),
+                edges: a
+                    .edges
+                    .union(&b.edges)
+                    .filter(|e| e != &edge)
+                    .cloned()
+                    .collect(),
+            };
+
+            g.nodes.insert(merged.id.to_string(), merged.clone());
+
+            for b_edge in b.edges.iter() {}
         }
     }
 
@@ -133,48 +154,6 @@ fn parse_input(input: &str) -> anyhow::Result<Graph> {
 
 struct Graph {
     nodes: hashbrown::HashMap<String, Node>,
-}
-
-impl Graph {
-    fn merge(&mut self, a_id: &str, b_id: &str) -> anyhow::Result<()> {
-        let a = self
-            .nodes
-            .remove(a_id)
-            .ok_or_else(|| anyhow::anyhow!("Failed to find node {}", a_id))?;
-
-        let b = self
-            .nodes
-            .remove(b_id)
-            .ok_or_else(|| anyhow::anyhow!("Failed to find node {}", b_id))?;
-
-        let merged_id = format!("{},{}", a_id, b_id);
-        let merged_edges = a
-            .edges
-            .iter()
-            .map(|edge| {
-                let other = edge.other(a_id);
-                Edge {
-                    a: merged_id.clone(),
-                    b: other.to_string(),
-                }
-            })
-            .chain(b.edges.iter().map(|edge| {
-                let other = edge.other(b_id);
-                Edge {
-                    a: merged_id.clone(),
-                    b: other.to_string(),
-                }
-            }))
-            .collect();
-        let merged = Node {
-            id: merged_id.clone(),
-            edges: merged_edges,
-        };
-
-        self.nodes.insert(merged_id, merged);
-
-        Ok(())
-    }
 }
 
 #[derive(Clone)]
