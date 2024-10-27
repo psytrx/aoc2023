@@ -17,7 +17,6 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
             }
         })
         .collect::<anyhow::Result<Vec<Operation>>>()?;
-    log::trace!("{:?}", operations);
 
     let mut boxes: Vec<std::collections::LinkedList<LabelledLens>> =
         vec![std::collections::LinkedList::new(); 256];

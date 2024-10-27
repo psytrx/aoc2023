@@ -24,13 +24,10 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
             }
 
             for a_b_edge in a.edges.iter() {
-                log::trace!("a_b_edge: {:?}", a_b_edge);
-
                 let b_id = a_b_edge.other(a_id);
                 let b = match g.nodes.get(b_id) {
                     Some(b) => b,
                     None => {
-                        log::trace!("Failed to find node b '{}'", b_id);
                         continue;
                     }
                 };
@@ -67,12 +64,9 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
         }
 
         for edge in merge.iter() {
-            log::trace!("merging {:?}", edge);
-
             let a = match g.nodes.remove(&edge.a) {
                 Some(a) => a,
                 None => {
-                    log::trace!("Failed to find node a '{}'", edge.a);
                     continue;
                 }
             };
@@ -80,7 +74,6 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
             let b = match g.nodes.remove(&edge.b) {
                 Some(b) => b,
                 None => {
-                    log::trace!("Failed to find node b '{}'", edge.b);
                     continue;
                 }
             };
@@ -98,7 +91,6 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
             g.nodes.insert(merged.id.to_string(), merged.clone());
 
             for a_edge in a.edges.iter() {
-                log::trace!("a_edge: {:?}", a_edge);
                 let other_id = a_edge.other(&a.id);
                 let other = g.nodes.get_mut(other_id);
                 if let Some(other) = other {
@@ -116,7 +108,6 @@ fn collapse(g: &mut Graph) -> anyhow::Result<()> {
             }
 
             for b_edge in b.edges.iter() {
-                log::trace!("b_edge: {:?}", b_edge);
                 let other_id = b_edge.other(&b.id);
                 let other = g.nodes.get_mut(other_id);
                 if let Some(other) = other {
