@@ -33,14 +33,14 @@ fn find_longest_path_tree(
     let mut new_max_path_len = max_path_len;
 
     let node = &g.nodes[node_idx];
-    for &neighbor_idx in node.neighbors.iter() {
-        if visited[neighbor_idx] {
+    for edge in node.edges.iter() {
+        if visited[edge.to_idx] {
             continue;
         }
 
         new_max_path_len = new_max_path_len.max(find_longest_path_tree(
             g,
-            neighbor_idx,
+            edge.to_idx,
             end_idx,
             path_len + 1,
             new_max_path_len,
@@ -57,7 +57,7 @@ fn build_graph(map: &[Vec<u8>], ignore_slope: bool) -> Graph {
         .iter()
         .flat_map(|row| {
             row.iter()
-                .map(|_| Node { neighbors: vec![] })
+                .map(|_| Node { edges: vec![] })
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -84,7 +84,7 @@ fn build_graph(map: &[Vec<u8>], ignore_slope: bool) -> Graph {
 
             let curr_idx = y * map[0].len() + x;
 
-            nodes[curr_idx].neighbors = moves
+            nodes[curr_idx].edges = moves
                 .iter()
                 .filter_map(|(dx, dy)| {
                     let (n_x, n_y) = (x as i32 + dx, y as i32 + dy);
@@ -97,8 +97,12 @@ fn build_graph(map: &[Vec<u8>], ignore_slope: bool) -> Graph {
                         return None;
                     }
 
-                    let n_idx = n_y as usize * map[0].len() + n_x as usize;
-                    Some(n_idx)
+                    let to_idx = n_y as usize * map[0].len() + n_x as usize;
+                    Some(Edge {
+                        from_idx: curr_idx,
+                        to_idx,
+                        distance: 1,
+                    })
                 })
                 .collect::<Vec<_>>();
         }
@@ -112,8 +116,15 @@ struct Graph {
 }
 
 #[derive(Clone, Debug)]
+struct Edge {
+    from_idx: usize,
+    to_idx: usize,
+    distance: usize,
+}
+
+#[derive(Clone, Debug)]
 struct Node {
-    neighbors: Vec<usize>,
+    edges: Vec<Edge>,
 }
 
 fn parse_input(input: &str) -> anyhow::Result<Vec<Vec<u8>>> {
