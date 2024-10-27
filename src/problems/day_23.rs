@@ -3,7 +3,8 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
 }
 
 pub fn part_two(input: &str) -> anyhow::Result<String> {
-    Ok(solve(input, true)?.to_string())
+    Ok("skipped".to_string())
+    // Ok(solve(input, true)?.to_string())
 }
 
 fn solve(input: &str, ignore_slope: bool) -> anyhow::Result<usize> {
