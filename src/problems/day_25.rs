@@ -1,6 +1,6 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
     let mut g = parse_input(input)?;
-    collapse(&mut g)?;
+    // collapse(&mut g)?;
     Ok("not implemented".to_string())
 }
 
