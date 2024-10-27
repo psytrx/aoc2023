@@ -1,5 +1,5 @@
 pub fn part_one(input: &str) -> anyhow::Result<String> {
-    let mut g = parse_input(input)?;
+    let _g = parse_input(input)?;
     // collapse(&mut g)?;
     Ok("not implemented".to_string())
 }
@@ -9,6 +9,7 @@ pub fn part_two(input: &str) -> anyhow::Result<String> {
     Ok("not implemented".to_string())
 }
 
+#[allow(dead_code)]
 fn collapse(g: &mut Graph) -> anyhow::Result<()> {
     while g.nodes.len() > 2 {
         // Find 2 neighboring nodes that have
