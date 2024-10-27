@@ -2,9 +2,9 @@ pub fn part_one(input: &str) -> anyhow::Result<String> {
     Ok(solve(input, false)?.to_string())
 }
 
-pub fn part_two(_input: &str) -> anyhow::Result<String> {
-    Ok("skipped".to_string())
-    // Ok(solve(input, true)?.to_string())
+pub fn part_two(input: &str) -> anyhow::Result<String> {
+    // Ok("skipped".to_string())
+    Ok(solve(input, true)?.to_string())
 }
 
 fn solve(input: &str, ignore_slope: bool) -> anyhow::Result<usize> {
